@@ -6,37 +6,11 @@
     font-family: sans-serif;
   }
 
-  /* ✅ 공통 이미지 스타일 */
   img {
     width: 100%;
     height: auto;
     display: block;
     margin: auto;
-  }
-
-  /* ✅ 모바일에선 width: 100% */
-  @media (max-width: 767px) {
-    img {
-      width: 100%;
-      max-width: 100%;
-    }
-
-    .video-box {
-      padding-top: 177.78%; /* 9:16 세로비 영상 비율 유지 */
-      max-width: 100%;
-    }
-  }
-
-  /* ✅ PC (768px 이상)에서만 제한 */
-  @media (min-width: 768px) {
-    img {
-      max-width: 900px;
-    }
-
-    .video-box {
-      max-width: 960px; /* 이미지보다 살짝 큼 */
-      padding-top: 56.25%; /* 16:9 비율 */
-    }
   }
 
   .video-box {
@@ -51,6 +25,30 @@
     left: 0;
     width: 100%;
     height: 100%;
+  }
+
+  /* ✅ 모바일: 화면에 꽉 차게 */
+  @media (max-width: 767px) {
+    img {
+      max-width: 100%;
+    }
+
+    .video-box {
+      padding-top: 177.78%; /* 9:16 비율 */
+      max-width: 100%;
+    }
+  }
+
+  /* ✅ PC: 정돈된 크기로 조정 */
+  @media (min-width: 768px) {
+    img {
+      max-width: 900px;
+    }
+
+    .video-box {
+      max-width: 960px;
+      padding-top: 56.25%; /* 16:9 비율 */
+    }
   }
 </style>
 </head>

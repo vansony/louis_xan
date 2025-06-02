@@ -32,7 +32,6 @@
       left: 0;
       width: 100%;
       height: 100%;
-      object-fit: cover;
     }
 
     /* 모바일 */
@@ -43,7 +42,7 @@
 
       .video-box {
         max-width: 100%;
-        padding-top: 177.78%; /* 9:16 */
+        padding-top: 177.78%; /* 9:16 비율 */
       }
     }
 
@@ -54,9 +53,9 @@
       }
 
       .video-box {
-        width: 100vw; /* 브라우저 폭 꽉 채움 */
+        width: 100vw;           /* 브라우저 너비 전체 */
         max-width: 100%;
-        padding-top: 56.25%; /* 16:9 */
+        padding-top: 56.25%;    /* 16:9 비율 */
       }
     }
   </style>
@@ -68,12 +67,14 @@
 
   <img src="https://enj161203.diskn.com/product/tshirts_test/tshirts_test01.jpg" />
 
+  <!-- ✅ 유튜브 영상 아이프레임 삽입 -->
   <div class="video-box">
-    <iframe src="https://player.vimeo.com/video/988659341?h=b0620e4f21&autoplay=1&quality=1080p&loop=1&title=0&background=1&muted=1"
-            frameborder="0"
-            allow="autoplay; fullscreen; picture-in-picture"
-            allowfullscreen>
-    </iframe>
+    <iframe
+      src="https://www.youtube.com/embed/GocUscytFQ8?autoplay=1&mute=1&loop=1&playlist=GocUscytFQ8&controls=0&modestbranding=1&rel=0"
+      frameborder="0"
+      allow="autoplay; fullscreen; picture-in-picture"
+      allowfullscreen
+    ></iframe>
   </div>
 
   <img src="https://enj161203.diskn.com/product/tshirts_test/tshirts_test02.jpg" />

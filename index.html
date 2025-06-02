@@ -1,9 +1,4 @@
-<!DOCTYPE html> 
-<html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MASMARULEZ</title>
   <style>
     body {
       margin: 0;
@@ -11,17 +6,31 @@
       font-family: sans-serif;
     }
 
+    img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: auto;
+    }
+
+    @media (min-width: 768px) {
+      img {
+        max-width: 900px;
+      }
+    }
+
     .video-box {
       position: relative;
       width: 100%;
       max-width: 1000px;
       margin: auto;
-      padding-top: 177.78%; /* 세로 영상 비율 기본값 (9:16) */
+      padding-top: 150%;
     }
 
     @media (min-width: 768px) {
       .video-box {
-        padding-top: 56.25%; /* PC 화면에선 16:9 비율로 조정 */
+        padding-top: 65%;
+        max-width: 900px;
       }
     }
 
@@ -32,14 +41,8 @@
       width: 100%;
       height: 100%;
     }
-
-    img {
-      width: 100%;
-      display: block;
-    }
   </style>
 </head>
-<body>
 
   <img src="https://gi.esmplus.com/pipe0801/MASMARULEZ/common/all-noti.jpg" class="fr-fic fr-dii loaded">
   <img src="https://gi.esmplus.com/pipe0801/MASMARULEZ/common/hp-all-top.jpg" class="fr-fic fr-dii loaded">

@@ -42,7 +42,7 @@
 
       .video-box {
         max-width: 100%;
-        padding-top: 177.78%; /* 9:16 비율 */
+        padding-top: 177.78%; /* 9:16 비율 유지 */
       }
     }
 
@@ -53,9 +53,9 @@
       }
 
       .video-box {
-        width: 100vw;           /* 브라우저 너비 전체 */
-        max-width: 100%;
-        padding-top: 56.25%;    /* 16:9 비율 */
+        width: 100%;
+        max-width: 540px;       /* PC에서 9:16 비율 맞는 적절한 폭 */
+        padding-top: 177.78%;   /* 세로 영상 */
       }
     }
   </style>
@@ -67,7 +67,7 @@
 
   <img src="https://enj161203.diskn.com/product/tshirts_test/tshirts_test01.jpg" />
 
-  <!-- ✅ 유튜브 영상 아이프레임 삽입 -->
+  <!-- ✅ 유튜브 세로 영상 -->
   <div class="video-box">
     <iframe
       src="https://www.youtube.com/embed/GocUscytFQ8?autoplay=1&mute=1&loop=1&playlist=GocUscytFQ8&controls=0&modestbranding=1&rel=0"

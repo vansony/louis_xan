@@ -71,22 +71,40 @@
 <head>
   <meta charset="UTF-8">
   <title>360도 가방 회전</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/spritespin@4.0.11/release/spritespin.js"></script>
   <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #fff;
+      height: 100%;
+    }
+
+    #bag-wrapper {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #f9f9f9;
+    }
+
     #bag360 {
-      width: 100%;
-      max-width: 400px;
-      height: 400px;
-      margin: auto;
-      background-color: #f0f0f0;
+      width: 90vw; /* 화면의 90% 폭 */
+      aspect-ratio: 800 / 1138;
+      max-height: 90vh;
+      background-color: #eaeaea;
       touch-action: pan-y;
     }
   </style>
 </head>
 <body>
 
-<div id="bag360"></div>
+<div id="bag-wrapper">
+  <div id="bag360"></div>
+</div>
 
 <script>
   const imageUrls = [];
@@ -96,9 +114,8 @@
 
   $('#bag360').spritespin({
     source: imageUrls,
-    width: 400,
-    height: 400,
-    frameTime: 60,
+    width: $('#bag360').width(), // 현재 뷰포트에 맞춰 자동 조정
+    responsive: true,
     animate: false,
     sense: -1,
     plugins: ['360', 'drag']
@@ -107,6 +124,7 @@
 
 </body>
 </html>
+
 
   <img src="https://enj161203.diskn.com/product/tshirts_test/tshirts_test01.jpg" />
 

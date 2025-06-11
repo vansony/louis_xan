@@ -84,7 +84,7 @@
 
     #bag-wrapper {
       width: 100vw;
-      height: 100vh;
+      min-height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -92,11 +92,12 @@
     }
 
     #bag360 {
-      width: 100vw;               /* 더 크게! */
+      width: 100vw;
       aspect-ratio: 800 / 1138;
-      max-height: 95vh;           /* 화면 거의 꽉 차게 */
+      max-height: 95vh;
       background-color: transparent;
-      touch-action: pan-y;
+      touch-action: pan-y;         /* 세로 스크롤 허용 */
+      will-change: transform;      /* 깜빡임 방지 */
     }
   </style>
 </head>
@@ -120,16 +121,16 @@
     source: imageUrls,
     width: containerWidth,
     height: containerHeight,
-    responsive: true,
+    responsive: false,         // 깜빡임 방지
     animate: false,
     sense: -1,
-    plugins: ['360', 'drag']
+    plugins: ['360', 'drag'],
+    dragAxis: 'x'              // 좌우만 회전, 상하 스크롤 허용
   });
 </script>
 
 </body>
 </html>
-
 
 
   <img src="https://enj161203.diskn.com/product/tshirts_test/tshirts_test01.jpg" />

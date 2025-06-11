@@ -96,8 +96,8 @@
       aspect-ratio: 800 / 1138;
       max-height: 95vh;
       background-color: transparent;
-      touch-action: pan-y;         /* 세로 스크롤 허용 */
-      will-change: transform;      /* 깜빡임 방지 */
+      touch-action: pan-y;
+      will-change: transform;
     }
   </style>
 </head>
@@ -117,21 +117,52 @@
   const bagRatio = 1138 / 800;
   const containerHeight = containerWidth * bagRatio;
 
+  let inertiaInterval = null;
+  let lastDragTime = 0;
+  let lastFrame = 0;
+  let dragVelocity = 0;
+
   $('#bag360').spritespin({
     source: imageUrls,
     width: containerWidth,
     height: containerHeight,
-    responsive: false,         // 깜빡임 방지
+    responsive: false,
     animate: false,
     sense: -1,
     plugins: ['360', 'drag'],
-    dragAxis: 'x'              // 좌우만 회전, 상하 스크롤 허용
+    dragAxis: 'x',
+
+    onDragStart: function (e, data) {
+      clearInterval(inertiaInterval);
+      lastDragTime = Date.now();
+      lastFrame = data.frame;
+    },
+
+    onDragEnd: function (e, data) {
+      const now = Date.now();
+      const timeDiff = (now - lastDragTime) || 1;
+      const frameDiff = data.frame - lastFrame;
+
+      dragVelocity = frameDiff / timeDiff * 10; // 프레임 속도 계산
+      dragVelocity = Math.max(-5, Math.min(5, dragVelocity)); // 속도 제한
+
+      inertiaInterval = setInterval(() => {
+        if (Math.abs(dragVelocity) < 0.1) {
+          clearInterval(inertiaInterval);
+          return;
+        }
+
+        data.frame = (data.frame + dragVelocity + imageUrls.length) % imageUrls.length;
+        data.target.setFrame(data.frame);
+
+        dragVelocity *= 0.92; // 감속
+      }, 30);
+    }
   });
 </script>
 
 </body>
 </html>
-
 
   <img src="https://enj161203.diskn.com/product/tshirts_test/tshirts_test01.jpg" />
 

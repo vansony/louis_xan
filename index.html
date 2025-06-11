@@ -92,12 +92,11 @@
     }
 
     #bag360 {
-      width: 95vw;                /* 더 크게 */
-      aspect-ratio: 800 / 1138;   /* 비율 유지 */
-      max-height: 85vh;           /* 더 크게 */
+      width: 95vw; /* 화면 폭의 95% */
+      aspect-ratio: 800 / 1138; /* 정확한 비율 */
+      max-height: 90vh;
       background-color: transparent;
       touch-action: pan-y;
-      object-fit: contain;
     }
   </style>
 </head>
@@ -113,9 +112,15 @@
     imageUrls.push(`https://enj161203.diskn.com/product/tshirts_test/test/레이어 ${i}.JPG`);
   }
 
+  // 정확한 비율 계산
+  const containerWidth = document.getElementById('bag360').clientWidth;
+  const bagRatio = 1138 / 800;
+  const containerHeight = containerWidth * bagRatio;
+
   $('#bag360').spritespin({
     source: imageUrls,
-    width: $('#bag360').width(),
+    width: containerWidth,
+    height: containerHeight,
     responsive: true,
     animate: false,
     sense: -1,
@@ -125,6 +130,7 @@
 
 </body>
 </html>
+
 
   <img src="https://enj161203.diskn.com/product/tshirts_test/tshirts_test01.jpg" />
 

@@ -92,9 +92,9 @@
     }
 
     #bag360 {
-      width: 95vw; /* 화면 폭의 95% */
-      aspect-ratio: 800 / 1138; /* 정확한 비율 */
-      max-height: 90vh;
+      width: 100vw;               /* 더 크게! */
+      aspect-ratio: 800 / 1138;
+      max-height: 95vh;           /* 화면 거의 꽉 차게 */
       background-color: transparent;
       touch-action: pan-y;
     }
@@ -112,7 +112,6 @@
     imageUrls.push(`https://enj161203.diskn.com/product/tshirts_test/test/레이어 ${i}.JPG`);
   }
 
-  // 정확한 비율 계산
   const containerWidth = document.getElementById('bag360').clientWidth;
   const bagRatio = 1138 / 800;
   const containerHeight = containerWidth * bagRatio;
@@ -130,6 +129,7 @@
 
 </body>
 </html>
+
 
 
   <img src="https://enj161203.diskn.com/product/tshirts_test/tshirts_test01.jpg" />

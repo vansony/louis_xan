@@ -66,6 +66,47 @@
 
   <img src="https://gi.esmplus.com/pipe0801/MASMARULEZ/common/all-noti.jpg" />
   <img src="https://gi.esmplus.com/pipe0801/MASMARULEZ/common/hp-all-top.jpg" />
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>360도 가방 회전</title>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/spritespin@4.0.11/release/spritespin.js"></script>
+  <style>
+    #bag360 {
+      width: 100%;
+      max-width: 400px;
+      height: 400px;
+      margin: auto;
+      background-color: #f0f0f0;
+      touch-action: pan-y;
+    }
+  </style>
+</head>
+<body>
+
+<div id="bag360"></div>
+
+<script>
+  const imageUrls = [];
+  for (let i = 1; i <= 37; i++) {
+    imageUrls.push(`https://enj161203.diskn.com/product/tshirts_test/test/레이어 ${i}.JPG`);
+  }
+
+  $('#bag360').spritespin({
+    source: imageUrls,
+    width: 400,
+    height: 400,
+    frameTime: 60,
+    animate: false,
+    sense: -1,
+    plugins: ['360', 'drag']
+  });
+</script>
+
+</body>
+</html>
 
   <img src="https://enj161203.diskn.com/product/tshirts_test/tshirts_test01.jpg" />
 

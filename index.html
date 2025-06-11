@@ -104,7 +104,7 @@
 <body>
 
 <div id="bag-wrapper">
-  <div id="bag360">로딩 중...</div>
+  <div id="bag360"></div>
 </div>
 
 <script>
@@ -117,11 +117,7 @@
   const bagRatio = 1138 / 800;
   const containerHeight = containerWidth * bagRatio;
 
-  let inertiaInterval = null;
-  let lastDragTime = 0;
-  let lastFrame = 0;
-  let dragVelocity = 0;
-
+  // SpriteSpin 초기화
   $('#bag360').spritespin({
     source: imageUrls,
     width: containerWidth,
@@ -130,35 +126,56 @@
     animate: false,
     sense: -1,
     plugins: ['360', 'drag'],
-    dragAxis: 'x',
-
-    onDragStart: function (e, data) {
-      clearInterval(inertiaInterval);
-      lastDragTime = Date.now();
-      lastFrame = data.frame;
-    },
-
-    onDragEnd: function (e, data) {
-      const now = Date.now();
-      const timeDiff = (now - lastDragTime) || 1;
-      const frameDiff = data.frame - lastFrame;
-
-      dragVelocity = frameDiff / timeDiff * 10; // 프레임 속도 계산
-      dragVelocity = Math.max(-5, Math.min(5, dragVelocity)); // 속도 제한
-
-      inertiaInterval = setInterval(() => {
-        if (Math.abs(dragVelocity) < 0.1) {
-          clearInterval(inertiaInterval);
-          return;
-        }
-
-        data.frame = (data.frame + dragVelocity + imageUrls.length) % imageUrls.length;
-        data.target.setFrame(data.frame);
-
-        dragVelocity *= 0.92; // 감속
-      }, 30);
-    }
+    dragAxis: 'x'
   });
+
+  // 관성 터치 구현
+  const spin = $('#bag360').spritespin('api');
+  let lastX = 0;
+  let velocityX = 0;
+  let inertiaInterval = null;
+  let lastMoveTime = 0;
+
+  const friction = 0.92;  // 감속 계수
+
+  const onTouchStart = (e) => {
+    if (inertiaInterval) clearInterval(inertiaInterval);
+    const touch = e.touches[0];
+    lastX = touch.clientX;
+    lastMoveTime = Date.now();
+  };
+
+  const onTouchMove = (e) => {
+    const touch = e.touches[0];
+    const now = Date.now();
+    const dx = touch.clientX - lastX;
+    const dt = now - lastMoveTime;
+
+    velocityX = dx / dt * 10;  // px/ms → 가중 속도
+    spin.frame = (spin.frame - dx / 4 + imageUrls.length) % imageUrls.length;
+    spin.updateFrame();
+
+    lastX = touch.clientX;
+    lastMoveTime = now;
+  };
+
+  const onTouchEnd = () => {
+    inertiaInterval = setInterval(() => {
+      if (Math.abs(velocityX) < 0.1) {
+        clearInterval(inertiaInterval);
+        return;
+      }
+      spin.frame = (spin.frame - velocityX + imageUrls.length) % imageUrls.length;
+      spin.updateFrame();
+      velocityX *= friction;
+    }, 30);
+  };
+
+  // 이벤트 연결
+  const container = document.getElementById('bag360');
+  container.addEventListener('touchstart', onTouchStart, { passive: true });
+  container.addEventListener('touchmove', onTouchMove, { passive: true });
+  container.addEventListener('touchend', onTouchEnd);
 </script>
 
 </body>

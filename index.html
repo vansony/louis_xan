@@ -9,25 +9,25 @@
       margin: 0;
       padding: 0;
       background: #fff;
-      height: 100%;
-      overflow: auto;
+      height: auto;
+      overflow-y: auto;
       font-family: sans-serif;
-      touch-action: none;
+      touch-action: auto; /* 모든 기본 터치 동작 허용 */
     }
     #bag-wrapper {
       display: flex;
       justify-content: center;
       align-items: center;
-      padding: 20px;
+      width: 100vw;
+      margin: 0;
     }
     canvas {
-      width: 100%;            /* 화면 너비에 맞춰 리사이즈 */
+      display: block;
+      width: 100vw;       /* 화면 너비에 맞게 꽉 채우기 */
       height: auto;
-      max-width: 100vw;
       max-height: 100vh;
-      background: #fff;
       cursor: grab;
-      touch-action: none;
+      touch-action: pan-y; /* 수직 스크롤 허용, 가로는 JS 제어 */
     }
   </style>
 </head>
@@ -54,7 +54,7 @@
       img.src = `https://enj161203.diskn.com/product/tshirts_test/test/레이어 ${i}.JPG`;
       if (i === 1) {
         img.onload = () => {
-          // 첫 이미지 로드 후 원본 해상도를 기준으로 캔버스 내부 픽셀 크기 설정
+          // 첫 이미지 로드 후 내부 픽셀 크기 설정 (원본 비율 유지)
           canvas.width = img.naturalWidth;
           canvas.height = img.naturalHeight;
           drawFrame(0);
@@ -95,7 +95,7 @@
       lastTime = now;
     });
 
-    // 드래그 끝 & 관성 (속도 70% 수준)
+    // 드래그 끝 & 관성
     canvas.addEventListener('pointerup', e => {
       isDragging = false;
       canvas.releasePointerCapture(e.pointerId);
@@ -104,7 +104,6 @@
       function inertia() {
         velocity *= decay;
         if (Math.abs(velocity) < 0.01) return;
-        // 관성 속도 조절: 기존 *5 → *3.5 (70%)
         currentFrame -= velocity * 3.5;
         drawFrame(Math.round(currentFrame));
         inertiaId = requestAnimationFrame(inertia);
@@ -112,11 +111,17 @@
       inertia();
     });
 
-    // 캔버스 밖에서 포인터 해제 시 처리
+    // 포인터 캔슬 시 드래그 종료
     canvas.addEventListener('pointercancel', e => {
       isDragging = false;
       canvas.releasePointerCapture(e.pointerId);
       canvas.style.cursor = 'grab';
+    });
+
+    // 윈도우 리사이즈 시에도 화면에 꽉 맞게 유지
+    window.addEventListener('resize', () => {
+      // CSS width:100vw가 적용되므로 별도 처리 불필요
+      drawFrame(Math.round(currentFrame));
     });
   </script>
 </body>

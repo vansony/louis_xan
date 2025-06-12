@@ -97,26 +97,13 @@
       width: 100%;
       max-width: 600px;
       background-color: transparent;
-      pointer-events: auto;
-    }
-
-    /* 세로 스크롤 핫존 (터치는 허용하되, 드래그는 통과) */
-    #bag-scroll-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 5;
-      touch-action: pan-y;
-      pointer-events: none; /* 여기서 핵심: 드래그 이벤트는 이미지로 전달됨 */
+      touch-action: none; /* 커스텀으로 처리 */
     }
   </style>
 </head>
 <body>
 
 <div id="bag-wrapper">
-  <div id="bag-scroll-overlay"></div> <!-- 스크롤 핫존 -->
   <div id="bag360">로딩 중...</div>
 </div>
 
@@ -163,11 +150,33 @@
   window.addEventListener('resize', () => {
     setTimeout(updateBagHeightOnly, 100);
   });
+
+  // ⭐️ 핵심: 터치 방향 감지해서 드래그/스크롤 분리
+  let startX = 0, startY = 0;
+  let isDraggingHorizontally = false;
+
+  bag360.addEventListener('touchstart', e => {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    isDraggingHorizontally = false;
+  });
+
+  bag360.addEventListener('touchmove', e => {
+    const dx = Math.abs(e.touches[0].clientX - startX);
+    const dy = Math.abs(e.touches[0].clientY - startY);
+
+    if (dx > dy && dx > 5) {
+      isDraggingHorizontally = true;
+      e.preventDefault(); // 👉 회전
+    } else if (dy > dx && dy > 5) {
+      isDraggingHorizontally = false;
+      // 👉 스크롤 허용 (preventDefault 하지 않음)
+    }
+  }, { passive: false });
 </script>
 
 </body>
 </html>
-
 
   <img src="https://enj161203.diskn.com/product/tshirts_test/tshirts_test02.jpg" />
   <img src="https://enj161203.diskn.com/product/tshirts_test/tshirts_test03.jpg" />

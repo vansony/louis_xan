@@ -72,12 +72,13 @@
       background: #ffffff;
     }
 
-    #bag360 {
-      width: 100%;
-      max-width: 600px;
-      background-color: transparent;
-      touch-action: pan-y;
-    }
+      #bag360 {
+        width: 100%;
+        max-width: 600px;
+        background-color: transparent;
+        touch-action: pan-y;
+        user-select: none;
+      }
   </style>
 </head>
 <body>
@@ -111,6 +112,10 @@
     let currentFrame = 0;
     let spinApi = null;
 
+    let frameFloat = 0;
+    let isDragging = false;
+    const speedFactor = 0.2; // frames per pixel
+
     let lastTouchX = 0;
     let lastMoveTime = 0;
     let lastSpeed = 0;
@@ -131,11 +136,11 @@
         animate: false,
         frame: currentFrame,
         sense: -1,
-        plugins: ['360', 'drag'],
-        dragAxis: 'x'
+        plugins: ['360']
       });
 
       spinApi = $(bag360).spritespin("api");
+      frameFloat = currentFrame;
       spinApi.onFrame = (e, data) => {
         currentFrame = data.frame;
       };
@@ -152,41 +157,58 @@
       setTimeout(updateBagHeightOnly, 100);
     });
 
-    bag360.addEventListener('touchstart', (e) => {
+    function updateFrame() {
+      if (!spinApi) return;
+      currentFrame = ((Math.round(frameFloat) % spinApi.frames) + spinApi.frames) % spinApi.frames;
+      spinApi.frame = currentFrame;
+      spinApi.updateFrame();
+    }
+
+    function pointerDown(e) {
       if (inertiaInterval) clearInterval(inertiaInterval);
-      lastTouchX = e.touches[0].clientX;
+      isDragging = true;
+      lastTouchX = e.clientX;
       lastMoveTime = Date.now();
       lastSpeed = 0;
-    });
+      bag360.setPointerCapture(e.pointerId);
+    }
 
-    bag360.addEventListener('touchmove', (e) => {
-      const dx = e.touches[0].clientX - lastTouchX;
+    function pointerMove(e) {
+      if (!isDragging) return;
+      const dx = e.clientX - lastTouchX;
       const dt = Date.now() - lastMoveTime;
+      frameFloat -= dx * speedFactor;
+      updateFrame();
 
-      if (Math.abs(dx) > 2 && dt > 10) {
+      if (dt > 0) {
         lastSpeed = dx / dt;
-        lastTouchX = e.touches[0].clientX;
+        lastTouchX = e.clientX;
         lastMoveTime = Date.now();
       }
-    }, { passive: true });
+    }
 
-    bag360.addEventListener('touchend', () => {
-      inertiaVelocity = lastSpeed * 100;
-      if (Math.abs(inertiaVelocity) < 1) return;
+    function endPointer(e) {
+      if (!isDragging) return;
+      isDragging = false;
+      bag360.releasePointerCapture(e.pointerId);
+      inertiaVelocity = lastSpeed * speedFactor;
+      if (Math.abs(inertiaVelocity) < 0.01) return;
 
       inertiaInterval = setInterval(() => {
-        if (!spinApi) return;
-
-        spinApi.frame = (spinApi.frame + Math.sign(inertiaVelocity) + spinApi.frames) % spinApi.frames;
-        spinApi.updateFrame();
-
-        inertiaVelocity *= 0.93;
-        if (Math.abs(inertiaVelocity) < 0.5) {
+        frameFloat -= inertiaVelocity * 16;
+        updateFrame();
+        inertiaVelocity *= 0.95;
+        if (Math.abs(inertiaVelocity) < 0.01) {
           clearInterval(inertiaInterval);
           inertiaInterval = null;
         }
       }, 16);
-    });
+    }
+
+    bag360.addEventListener('pointerdown', pointerDown);
+    bag360.addEventListener('pointermove', pointerMove);
+    bag360.addEventListener('pointerup', endPointer);
+    bag360.addEventListener('pointercancel', endPointer);
   </script>
 </body>
 </html>

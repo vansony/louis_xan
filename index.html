@@ -98,8 +98,9 @@
     }, { passive: true });
 
     // 포인터 업
+    // 포인터 업: 항상 관성 재시작
     canvas.addEventListener('pointerup', e => {
-      if (hasDragged) startInertia();
+      startInertia();
       pointerDown = false;
       canvas.releasePointerCapture(e.pointerId);
       canvas.style.cursor = 'grab';

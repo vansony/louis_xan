@@ -3,134 +3,131 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>360도 가방 회전 (Inertia + Vertical Scroll 대응)</title>
+  <title>360도 가방 회전 (Canvas + 순수 JS Inertia)</title>
   <style>
     html, body {
       margin: 0;
       padding: 0;
-      background: #ffffff;
+      background: #fff;
       height: 100%;
       overflow-x: hidden;
       font-family: sans-serif;
+      touch-action: none; /* 모든 터치 제스처 JS에서 처리 */
     }
     #bag-wrapper {
-      position: relative;
-      width: 100vw;
-      padding: 5vh 0;
       display: flex;
       justify-content: center;
-      background: #ffffff;
+      align-items: center;
+      height: 100%;
     }
-    #bag360 {
-      width: 100%;
-      max-width: 600px;
-      background-color: transparent;
-      touch-action: pan-y; /* 세로 스크롤 허용 */
+    canvas {
+      max-width: 90vw;
+      max-height: 90vh;
+      width: auto;
+      height: auto;
+      background: #fff;
+      cursor: grab;
+      touch-action: none;
     }
   </style>
-
-  <!-- 라이브러리 로드 -->
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/spritespin@4.0.11/release/spritespin.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.0/gsap.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.0/InertiaPlugin.min.js"></script>
-  <script>
-    gsap.registerPlugin(InertiaPlugin);
-    console.log("InertiaPlugin loaded?", !!window.InertiaPlugin);
-  </script>
 </head>
 <body>
   <div id="bag-wrapper">
-    <div id="bag360">로딩 중...</div>
+    <canvas id="bagCanvas"></canvas>
   </div>
 
   <script>
-    // 이미지 URL 배열 생성
-    const imageUrls = [];
-    for (let i = 1; i <= 37; i++) {
-      imageUrls.push(`https://enj161203.diskn.com/product/tshirts_test/test/레이어 ${i}.JPG`);
-    }
-
-    const bag360 = document.getElementById('bag360');
-    const bagRatio = 1326 / 800;
+    const canvas = document.getElementById('bagCanvas');
+    const ctx = canvas.getContext('2d');
+    const frameCount = 37;
+    const images = [];
     let currentFrame = 0;
-    let api;
-    let dragging = false;
-    let lastX = 0, lastY = 0, lastTime = 0;
+    let isDragging = false;
+    let startX = 0;
+    let lastX = 0;
     let velocity = 0;
+    let lastTime = 0;
+    let inertiaId = null;
 
-    function initSpritespin() {
-      const width = bag360.clientWidth;
-      const height = width * bagRatio;
-      bag360.style.height = `${height}px`;
-      $(bag360).spritespin('destroy');
-      $(bag360).spritespin({
-        source: imageUrls,
-        width: width,
-        height: height,
-        animate: false,
-        frame: currentFrame,
-        plugins: ['360']
-      });
-      api = $('#bag360').spritespin('api');
-    }
-
-    window.addEventListener('load', initSpritespin);
-    window.addEventListener('resize', () => setTimeout(initSpritespin, 100));
-
-    function onPointerDown(e) {
-      dragging = true;
-      bag360.setPointerCapture(e.pointerId);
-      lastX = e.clientX;
-      lastY = e.clientY;
-      lastTime = performance.now();
-      gsap.killTweensOf(window.inertiaObj || {});
-    }
-
-    function onPointerMove(e) {
-      if (!dragging) return;
-      const now = performance.now();
-      const dx = e.clientX - lastX;
-      const dy = e.clientY - lastY;
-      const dt = now - lastTime;
-      if (Math.abs(dx) > Math.abs(dy)) {
-        e.preventDefault();
-        currentFrame = (currentFrame + dx * -0.2 + api.source.length) % api.source.length;
-        api.updateFrame(Math.round(currentFrame));
-        velocity = dx / dt;
-        lastX = e.clientX;
-        lastY = e.clientY;
-        lastTime = now;
-      } else {
-        dragging = false;
+    // 캔버스 사이즈 설정
+    function resizeCanvas() {
+      const ratio = 1326 / 800;
+      const vw = window.innerWidth * 0.9;
+      const vh = window.innerHeight * 0.9;
+      let w = vw;
+      let h = vw * (800 / 1326);
+      if (h > vh) {
+        h = vh;
+        w = vh * (1326 / 800);
       }
+      canvas.width = w;
+      canvas.height = h;
+      drawFrame(currentFrame);
     }
 
-    function onPointerUp(e) {
-      if (!dragging) {
-        bag360.releasePointerCapture(e.pointerId);
+    // 이미지 프리로드
+    for (let i = 1; i <= frameCount; i++) {
+      const img = new Image();
+      img.src = `https://enj161203.diskn.com/product/tshirts_test/test/레이어 ${i}.JPG`;
+      images.push(img);
+    }
+
+    // 특정 프레임 그리기
+    function drawFrame(frame) {
+      const img = images[(frame + frameCount) % frameCount];
+      if (!img.complete) {
+        img.onload = () => drawFrame(frame);
         return;
       }
-      dragging = false;
-      bag360.releasePointerCapture(e.pointerId);
-      const start = currentFrame;
-      window.inertiaObj = { frame: start };
-      console.log('Trigger inertia with velocity:', velocity);
-      gsap.to(window.inertiaObj, {
-        inertia: { frame: velocity * 500 },
-        onUpdate(obj) {
-          currentFrame = ((obj.frame % api.source.length) + api.source.length) % api.source.length;
-          api.updateFrame(Math.round(currentFrame));
-        },
-        ease: 'power3.out'
-      });
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     }
 
-    bag360.addEventListener('pointerdown', onPointerDown);
-    bag360.addEventListener('pointermove', onPointerMove, { passive: false });
-    bag360.addEventListener('pointerup', onPointerUp);
-    bag360.addEventListener('pointercancel', onPointerUp);
-    bag360.addEventListener('lostpointercapture', onPointerUp);
+    // 드래그 시작
+    canvas.addEventListener('pointerdown', e => {
+      isDragging = true;
+      canvas.setPointerCapture(e.pointerId);
+      startX = e.clientX;
+      lastX = startX;
+      lastTime = performance.now();
+      cancelAnimationFrame(inertiaId);
+      canvas.style.cursor = 'grabbing';
+    });
+
+    // 드래그 중
+    canvas.addEventListener('pointermove', e => {
+      if (!isDragging) return;
+      const dx = e.clientX - lastX;
+      const now = performance.now();
+      const dt = now - lastTime;
+      velocity = dx / dt;
+      currentFrame = (currentFrame - dx * 0.2 + frameCount) % frameCount;
+      drawFrame(Math.round(currentFrame));
+      lastX = e.clientX;
+      lastTime = now;
+    });
+
+    // 드래그 끝 & 관성
+    canvas.addEventListener('pointerup', e => {
+      isDragging = false;
+      canvas.releasePointerCapture(e.pointerId);
+      canvas.style.cursor = 'grab';
+      const decay = 0.95;
+      function inertia() {
+        velocity *= decay;
+        if (Math.abs(velocity) < 0.01) return;
+        currentFrame = (currentFrame - velocity * 10 + frameCount) % frameCount;
+        drawFrame(Math.round(currentFrame));
+        inertiaId = requestAnimationFrame(inertia);
+      }
+      inertia();
+    });
+
+    // 화면 리사이즈 대응
+    window.addEventListener('resize', resizeCanvas);
+
+    // 초기 실행
+    resizeCanvas();
   </script>
 </body>
 </html>

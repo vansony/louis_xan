@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>360도 가방 회전 (Canvas + 순수 JS Inertia + Scroll Rotation)</title>
+  <title>360도 가방 회전 (Canvas + JS Inertia + Scroll Rotation)</title>
   <style>
     html, body {
       margin: 0; padding: 0;
@@ -109,12 +109,12 @@
       canvas.style.cursor = 'grab';
     });
 
-    // 스크롤 이벤트로도 회전
+    // 스크롤 이벤트로도 회전 (항상 동일 방향)
     window.addEventListener('scroll', () => {
       const scrollY = window.scrollY;
       const dy = scrollY - lastScrollY;
-      // 스크롤 이동량에 비례해 회전 (조정 필요 시 곱셈 계수 변경)
-      currentFrame -= dy * 0.3;
+      // 스크롤 이동 방향에 상관없이 진행 방향 유지
+      currentFrame += dy * 0.3;
       drawFrame(Math.round(currentFrame));
       lastScrollY = scrollY;
     }, { passive: true });

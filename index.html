@@ -69,19 +69,61 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <title>360도 가방 회전 (관성 포함)</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Masmarulez</title>
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/spritespin@4.0.11/release/spritespin.js"></script>
   <style>
-    html, body {
+    body {
       margin: 0;
       padding: 0;
-      background: #ffffff;
-      min-height: 100%;
+      font-family: sans-serif;
+      background: #fff;
+    }
+
+    img {
+      width: 100%;
       height: auto;
-      overflow-x: hidden;
+      display: block;
+      margin: auto;
+    }
+
+    .video-box {
+      position: relative;
+      width: 100%;
+      margin: 0 auto;
+      overflow: hidden;
+    }
+
+    .video-box iframe {
+      position: absolute;
+      top: 0;
+@@ -38,180 +40,153 @@
+    @media (max-width: 767px) {
+      img {
+        max-width: 100%;
+      }
+
+      .video-box {
+        max-width: 100%;
+        padding-top: 177.78%;
+      }
+    }
+
+    /* PC: 적절한 세로 제한 + 비율 유지 */
+    @media (min-width: 768px) {
+      img {
+        max-width: 900px;
+      }
+
+      .video-box {
+        width: 100%;
+        max-width: 540px; /* 9:16 기준 */
+        aspect-ratio: 9 / 16;
+        height: auto;
+        max-height: 90vh; /* 화면보다 너무 길지 않도록 제한 */
+      }
     }
 
     #bag-wrapper {
@@ -97,111 +139,120 @@
       width: 100%;
       max-width: 600px;
       background-color: transparent;
-      touch-action: none;
+      touch-action: pan-y;
     }
   </style>
 </head>
 <body>
 
-<div id="bag-wrapper">
-  <div id="bag360">로딩 중...</div>
-</div>
+  <img src="https://gi.esmplus.com/pipe0801/MASMARULEZ/common/all-noti.jpg" />
+  <img src="https://gi.esmplus.com/pipe0801/MASMARULEZ/common/hp-all-top.jpg" />
 
-<script>
-  const imageUrls = [];
-  for (let i = 1; i <= 37; i++) {
-    imageUrls.push(`https://enj161203.diskn.com/product/tshirts_test/test/레이어 ${i}.JPG`);
-  }
+  <div id="bag-wrapper">
+    <div id="bag360">로딩 중...</div>
+  </div>
 
-  const bag360 = document.getElementById('bag360');
-  const bagRatio = 1326 / 800;
-  let currentFrame = 0;
-  let spinApi = null;
+  <img src="https://enj161203.diskn.com/product/tshirts_test/tshirts_test02.jpg" />
+  <img src="https://enj161203.diskn.com/product/tshirts_test/tshirts_test03.jpg" />
+  <img src="https://enj161203.diskn.com/product/tshirts_test/tshirts_test04.jpg" />
+  <img src="https://enj161203.diskn.com/product/tshirts_test/tshirts_test05.jpg" />
+  <img src="https://enj161203.diskn.com/product/tshirts_test/tshirts_test06.jpg" />
+  <img src="https://enj161203.diskn.com/product/tshirts_test/tshirts_test07.gif" />
+  <img src="https://enj161203.diskn.com/product/tshirts_test/tshirts_test08.jpg" />
+  <img src="https://enj161203.diskn.com/product/tshirts_test/tshirts_test09.jpg" />
 
-  let lastTouchX = 0;
-  let lastMoveTime = 0;
-  let lastSpeed = 0;
-  let inertiaVelocity = 0;
-  let inertiaInterval = null;
+  <img src="https://gi.esmplus.com/pipe0801/MASMARULEZ/common/c-bottom.jpg" />
 
-  function setBagSize() {
-    const width = bag360.clientWidth;
-    const height = width * bagRatio;
-    bag360.style.height = `${height}px`;
-
-    $(bag360).spritespin("destroy");
-    $(bag360).spritespin({
-      source: imageUrls,
-      width: width,
-      height: height,
-      responsive: false,
-      animate: false,
-      frame: currentFrame,
-      sense: -1,
-      plugins: ['360', 'drag'], // drag 플러그인 복원!
-      dragAxis: 'x'
-    });
-
-    spinApi = $(bag360).spritespin("api");
-    spinApi.onFrame = (e, data) => {
-      currentFrame = data.frame;
-    };
-  }
-
-  function updateBagHeightOnly() {
-    const width = bag360.clientWidth;
-    const height = width * bagRatio;
-    bag360.style.height = `${height}px`;
-  }
-
-  window.addEventListener('load', setBagSize);
-  window.addEventListener('resize', () => {
-    setTimeout(updateBagHeightOnly, 100);
-  });
-
-  // 🔁 관성 회전 구현
-  bag360.addEventListener('touchstart', (e) => {
-    if (inertiaInterval) clearInterval(inertiaInterval);
-    lastTouchX = e.touches[0].clientX;
-    lastMoveTime = Date.now();
-    lastSpeed = 0;
-  });
-
-  bag360.addEventListener('touchmove', (e) => {
-    const dx = e.touches[0].clientX - lastTouchX;
-    const dt = Date.now() - lastMoveTime;
-
-    if (Math.abs(dx) > 2 && dt > 10) {
-      lastSpeed = dx / dt;
-      lastTouchX = e.touches[0].clientX;
-      lastMoveTime = Date.now();
+  <script>
+    const imageUrls = [];
+    for (let i = 1; i <= 37; i++) {
+      imageUrls.push(`https://enj161203.diskn.com/product/tshirts_test/test/레이어 ${i}.JPG`);
     }
 
-    // drag 플러그인이 동작하도록 touchmove에서는 preventDefault 하지 않음
-  }, { passive: true });
+    const bag360 = document.getElementById('bag360');
+    const bagRatio = 1326 / 800;
+    let currentFrame = 0;
+    let spinApi = null;
 
-  bag360.addEventListener('touchend', () => {
-    inertiaVelocity = lastSpeed * 100; // 관성 속도 설정
-    if (Math.abs(inertiaVelocity) < 1) return;
+    let lastTouchX = 0;
+    let lastMoveTime = 0;
+    let lastSpeed = 0;
+    let inertiaVelocity = 0;
+    let inertiaInterval = null;
 
-    inertiaInterval = setInterval(() => {
-      if (!spinApi) return;
+    function setBagSize() {
+      const width = bag360.clientWidth;
+      const height = width * bagRatio;
+      bag360.style.height = `${height}px`;
 
-      spinApi.frame = (spinApi.frame + Math.sign(inertiaVelocity) + spinApi.frames) % spinApi.frames;
-      spinApi.updateFrame();
+      $(bag360).spritespin("destroy");
+      $(bag360).spritespin({
+        source: imageUrls,
+        width: width,
+        height: height,
+        responsive: false,
+        animate: false,
+        frame: currentFrame,
+        sense: -1,
+        plugins: ['360', 'drag'],
+        dragAxis: 'x'
+      });
 
-      inertiaVelocity *= 0.93; // 감속
-      if (Math.abs(inertiaVelocity) < 0.5) {
-        clearInterval(inertiaInterval);
-        inertiaInterval = null;
+      spinApi = $(bag360).spritespin("api");
+      spinApi.onFrame = (e, data) => {
+        currentFrame = data.frame;
+      };
+    }
+
+    function updateBagHeightOnly() {
+      const width = bag360.clientWidth;
+      const height = width * bagRatio;
+      bag360.style.height = `${height}px`;
+    }
+
+    window.addEventListener('load', setBagSize);
+    window.addEventListener('resize', () => {
+      setTimeout(updateBagHeightOnly, 100);
+    });
+
+    bag360.addEventListener('touchstart', (e) => {
+      if (inertiaInterval) clearInterval(inertiaInterval);
+      lastTouchX = e.touches[0].clientX;
+      lastMoveTime = Date.now();
+      lastSpeed = 0;
+    });
+
+    bag360.addEventListener('touchmove', (e) => {
+      const dx = e.touches[0].clientX - lastTouchX;
+      const dt = Date.now() - lastMoveTime;
+
+      if (Math.abs(dx) > 2 && dt > 10) {
+        lastSpeed = dx / dt;
+        lastTouchX = e.touches[0].clientX;
+        lastMoveTime = Date.now();
       }
-    }, 16);
-  });
-</script>
+    }, { passive: true });
 
+    bag360.addEventListener('touchend', () => {
+      inertiaVelocity = lastSpeed * 100;
+      if (Math.abs(inertiaVelocity) < 1) return;
+
+      inertiaInterval = setInterval(() => {
+        if (!spinApi) return;
+
+        spinApi.frame = (spinApi.frame + Math.sign(inertiaVelocity) + spinApi.frames) % spinApi.frames;
+        spinApi.updateFrame();
+
+        inertiaVelocity *= 0.93;
+        if (Math.abs(inertiaVelocity) < 0.5) {
+          clearInterval(inertiaInterval);
+          inertiaInterval = null;
+        }
+      }, 16);
+    });
+  </script>
 </body>
 </html>
-
   <img src="https://enj161203.diskn.com/product/tshirts_test/tshirts_test02.jpg" />
   <img src="https://enj161203.diskn.com/product/tshirts_test/tshirts_test03.jpg" />
   <img src="https://enj161203.diskn.com/product/tshirts_test/tshirts_test04.jpg" />

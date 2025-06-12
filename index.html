@@ -39,8 +39,8 @@
     const frameCount = 37;
     const images = [];
     let currentFrame = 0;
-    let isDragging = false;
-    let startX = 0, lastX = 0, lastTime = 0, velocity = 0, inertiaId;
+    let pointerDown = false;
+    let lastX = 0, lastTime = 0, velocity = 0, inertiaId;
 
     // 이미지 로드 및 캔버스 설정
     for (let i = 1; i <= frameCount; i++) {
@@ -64,60 +64,49 @@
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     }
 
-    // 포인터 다운: 시작 위치 기록, 관성 중지
+    // 포인터 다운: 회전 시작 준비
     canvas.addEventListener('pointerdown', e => {
-      startX = lastX = e.clientX;
+      pointerDown = true;
+      lastX = e.clientX;
       lastTime = performance.now();
-      isDragging = false;
       cancelAnimationFrame(inertiaId);
+      canvas.setPointerCapture(e.pointerId);
+      canvas.style.cursor = 'grabbing';
     });
 
-    // 포인터 이동: 수평 이동 있으면 드래그 시작 & 회전
+    // 포인터 이동: 항상 가로 이동만큼 회전, 수직 스크롤도 유지
     canvas.addEventListener('pointermove', e => {
-      const dxTotal = e.clientX - startX;
+      if (!pointerDown) return;
       const now = performance.now();
       const dt = now - lastTime;
-      // 드래그 시작 판단: 수평 이동이 5px 넘으면
-      if (!isDragging && Math.abs(dxTotal) > 5) {
-        isDragging = true;
-        canvas.setPointerCapture(e.pointerId);
-        canvas.style.cursor = 'grabbing';
-        lastX = e.clientX;
-        lastTime = now;
-      }
-      if (isDragging) {
-        const dx = e.clientX - lastX;
-        velocity = dx / dt;
-        currentFrame -= dx * 0.2;
-        drawFrame(Math.round(currentFrame));
-        lastX = e.clientX;
-        lastTime = now;
-      }
-      // 수직 스크롤은 기본 동작으로 유지
+      const dx = e.clientX - lastX;
+      velocity = dx / dt;
+      currentFrame -= dx * 0.2;
+      drawFrame(Math.round(currentFrame));
+      lastX = e.clientX;
+      lastTime = now;
     }, { passive: true });
 
     // 포인터 업: 관성 적용
     canvas.addEventListener('pointerup', e => {
-      if (isDragging) {
-        canvas.releasePointerCapture(e.pointerId);
-        canvas.style.cursor = 'grab';
-        isDragging = false;
-        (function inertia() {
-          velocity *= 0.95;
-          if (Math.abs(velocity) < 0.01) return;
-          currentFrame -= velocity * 3.5;
-          drawFrame(Math.round(currentFrame));
-          inertiaId = requestAnimationFrame(inertia);
-        })();
-      }
+      if (!pointerDown) return;
+      pointerDown = false;
+      canvas.releasePointerCapture(e.pointerId);
+      canvas.style.cursor = 'grab';
+      (function inertia() {
+        velocity *= 0.95;
+        if (Math.abs(velocity) < 0.01) return;
+        currentFrame -= velocity * 3.5;
+        drawFrame(Math.round(currentFrame));
+        inertiaId = requestAnimationFrame(inertia);
+      })();
     });
 
     canvas.addEventListener('pointercancel', e => {
-      if (isDragging) {
-        canvas.releasePointerCapture(e.pointerId);
-        canvas.style.cursor = 'grab';
-        isDragging = false;
-      }
+      if (!pointerDown) return;
+      pointerDown = false;
+      canvas.releasePointerCapture(e.pointerId);
+      canvas.style.cursor = 'grab';
     });
   </script>
 </body>

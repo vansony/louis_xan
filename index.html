@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>360도 가방 회전 (Inertia 적용)</title>
+  <title>360도 가방 회전 (Inertia 적용 테스트용)</title>
   <style>
     html, body {
       margin: 0;
@@ -26,7 +26,7 @@
       width: 100%;
       max-width: 600px;
       background-color: transparent;
-      pointer-events: auto;
+      touch-action: none;
     }
     #bag-scroll-overlay {
       position: absolute;
@@ -98,31 +98,34 @@
       }, 100);
     });
 
-    // 관성 드래그 로직
+    // 관성 드래그 로직 (테스트용: 속도 크게)
     let lastX = 0, lastTime = 0, velocity = 0;
     const api = () => $('#bag360').spritespin('api');
 
-    bag360.addEventListener('pointerdown', e => {
+    function onPointerDown(e) {
       bag360.setPointerCapture(e.pointerId);
-      lastX = e.pageX;
-      lastTime = Date.now();
-    });
+      lastX = e.clientX;
+      lastTime = performance.now();
+    }
 
-    bag360.addEventListener('pointermove', e => {
-      if (!(e.buttons & 1)) return;
-      const now = Date.now();
-      const dx = e.pageX - lastX;
+    function onPointerMove(e) {
+      if (!bag360.hasPointerCapture(e.pointerId)) return;
+      const now = performance.now();
+      const dx = e.clientX - lastX;
       const dt = now - lastTime;
-      velocity = dx / dt * 100;
-      lastX = e.pageX;
+      // 속도 스케일을 크게 해서 테스트
+      velocity = (dx / dt) * 2000;  // 기본 *100 → *2000으로 대폭 증가
+      lastX = e.clientX;
       lastTime = now;
-    });
+    }
 
-    bag360.addEventListener('pointerup', e => {
+    function onPointerUp(e) {
+      if (!bag360.hasPointerCapture(e.pointerId)) return;
       bag360.releasePointerCapture(e.pointerId);
       const sprAPI = api();
       const startFrame = sprAPI.frame;
 
+      console.log('Trigger inertia with velocity:', velocity);
       gsap.to({ frame: startFrame }, {
         inertia: { frame: velocity },
         onUpdate(obj) {
@@ -130,11 +133,12 @@
         },
         ease: 'power3.out'
       });
-    });
+    }
 
-    bag360.addEventListener('pointercancel', e => {
-      bag360.releasePointerCapture(e.pointerId);
-    });
+    bag360.addEventListener('pointerdown', onPointerDown);
+    bag360.addEventListener('pointermove', onPointerMove);
+    bag360.addEventListener('pointerup', onPointerUp);
+    bag360.addEventListener('pointercancel', onPointerUp);
   </script>
 </body>
 </html>

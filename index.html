@@ -107,6 +107,11 @@
     
     
 
+        // 스크롤 중에도 관성 유지
+    window.addEventListener('scroll', () => {
+      startInertia();
+    }, { passive: true });
+
     // 리사이즈
     window.addEventListener('resize', () => drawFrame(Math.round(currentFrame)));
   </script>

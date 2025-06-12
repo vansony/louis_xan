@@ -74,12 +74,12 @@
       canvas.style.cursor = 'grabbing';
     });
 
-    // 포인터 무브: 대각선 스크롤 중에도 수평 성분이 있으면 드래그로 인식
+    // 포인터 무브: 수평 이동이 감지되면 드래그로 인식하여 관성만 취소
     canvas.addEventListener('pointermove', e => {
       if (!pointerDown) return;
       const dxTotal = e.clientX - startX;
-      const dyTotal = e.clientY - startY;
-      if (!hasDragged && Math.abs(dxTotal) > Math.abs(dyTotal)) {
+      // 수평 이동만으로 드래그 인식
+      if (!hasDragged && Math.abs(dxTotal) > 0) {
         hasDragged = true;
         cancelAnimationFrame(inertiaId);
       }

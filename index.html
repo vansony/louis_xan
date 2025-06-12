@@ -11,51 +11,66 @@
   </style>
 </head>
 <body>
-  <div id="bag-wrapper"><canvas id="bagCanvas"></canvas></div>
+  <div id="bag-wrapper">
+    <canvas id="bagCanvas"></canvas>
+  </div>
   <script>
     const canvas = document.getElementById('bagCanvas');
     const ctx = canvas.getContext('2d');
-    const frameCount = 37, images = [];
+    const frameCount = 37;
+    const images = [];
     let currentFrame = 0;
-    let pointerDown = false, hasDragged = false;
-    let startX = 0, lastX = 0, lastTime = 0, velocity = 0, inertiaId;
+
+    // 드래그 상태
+    let pointerDown = false;
+    let hasDragged = false;
+    let startX = 0, startY = 0;
+    let lastX = 0, lastTime = 0, velocity = 0, inertiaId;
 
     // 이미지 로드 및 캔버스 설정
     for (let i = 1; i <= frameCount; i++) {
-      const img = new Image(); img.src = `https://enj161203.diskn.com/product/tshirts_test/test/레이어 ${i}.JPG`;
-      if (i === 1) img.onload = () => { canvas.width = img.naturalWidth; canvas.height = img.naturalHeight; drawFrame(0); };
+      const img = new Image();
+      img.src = `https://enj161203.diskn.com/product/tshirts_test/test/레이어 ${i}.JPG`;
+      if (i === 1) {
+        img.onload = () => {
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+          drawFrame(0);
+        };
+      }
       images.push(img);
     }
 
+    // 프레임 그리기
     function drawFrame(frame) {
       const idx = ((frame % frameCount) + frameCount) % frameCount;
-      const img = images[idx]; if (!img.complete) return;
+      const img = images[idx];
+      if (!img.complete) return;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     }
 
     // 포인터 다운
     canvas.addEventListener('pointerdown', e => {
-      pointerDown = true; hasDragged = false;
-      startX = lastX = e.clientX; lastTime = performance.now();
+      pointerDown = true;
+      hasDragged = false;
+      startX = lastX = e.clientX;
       startY = e.clientY;
-      canvas.setPointerCapture(e.pointerId);
-      canvas.style.cursor = 'grabbing';
-    });
+      lastTime = performance.now();
       canvas.setPointerCapture(e.pointerId);
       canvas.style.cursor = 'grabbing';
     });
 
-    // 포인터 이동: 스크롤인 경우에는 hasDragged 유지되지 않음
+    // 포인터 이동: 수평 드래그 감지 및 회전
     canvas.addEventListener('pointermove', e => {
       if (!pointerDown) return;
       const now = performance.now();
       const dxTotal = e.clientX - startX;
       const dyTotal = e.clientY - startY;
-      // 수평 이동이 수직 이동보다 클 때만 드래그로 인식
-      if (!hasDragged && Math.abs(dxTotal) > Math.abs(dyTotal) && Math.abs(dxTotal) > 0) {
+      // 수평 이동이 더 크면 드래그로 인식
+      if (!hasDragged && Math.abs(dxTotal) > Math.abs(dyTotal)) {
         hasDragged = true;
-        cancelAnimationFrame(inertiaId);  // 실제 드래그 시작 시 관성 취소
+        cancelAnimationFrame(inertiaId);
       }
       if (hasDragged) {
         const dx = e.clientX - lastX;
@@ -66,10 +81,9 @@
         lastX = e.clientX;
         lastTime = now;
       }
-      // 수직 또는 대각선(수직 우선) 스크롤 중일 땐 hasDragged가 false라 관성 유지
     }, { passive: true });
 
-    // 포인터 업: 관성 적용 (스크롤 시 hasDragged false 상태면 건너뜀)
+    // 포인터 업: 관성 적용
     canvas.addEventListener('pointerup', e => {
       if (hasDragged) {
         (function inertia() {
@@ -80,11 +94,15 @@
           inertiaId = requestAnimationFrame(inertia);
         })();
       }
-      pointerDown = false; canvas.releasePointerCapture(e.pointerId);
+      pointerDown = false;
+      canvas.releasePointerCapture(e.pointerId);
       canvas.style.cursor = 'grab';
     });
+
+    // 캔버스 밖 포인터 취소
     canvas.addEventListener('pointercancel', e => {
-      pointerDown = false; canvas.releasePointerCapture(e.pointerId);
+      pointerDown = false;
+      canvas.releasePointerCapture(e.pointerId);
       canvas.style.cursor = 'grab';
     });
 

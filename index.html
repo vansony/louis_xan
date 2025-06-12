@@ -4,8 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Masmarulez</title>
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/spritespin@4.0.11/release/spritespin.js"></script>
   <style>
     body {
       margin: 0;
@@ -62,6 +60,30 @@
         max-height: 90vh; /* 화면보다 너무 길지 않도록 제한 */
       }
     }
+  </style>
+</head>
+<body>
+
+  <img src="https://gi.esmplus.com/pipe0801/MASMARULEZ/common/all-noti.jpg" />
+  <img src="https://gi.esmplus.com/pipe0801/MASMARULEZ/common/hp-all-top.jpg" />
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>360도 가방 회전</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/spritespin@4.0.11/release/spritespin.js"></script>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #ffffff;
+      min-height: 100%;
+      height: auto;
+      overflow-x: hidden;
+    }
 
     #bag-wrapper {
       position: relative;
@@ -72,24 +94,82 @@
       background: #ffffff;
     }
 
-      #bag360 {
-        width: 100%;
-        max-width: 600px;
-        background-color: transparent;
-        touch-action: pan-y;
-        user-select: none;
-      }
+    #bag360 {
+      width: 100%;
+      max-width: 600px;
+      background-color: transparent;
+      pointer-events: auto;
+    }
+
+    /* 세로 스크롤 핫존 (터치는 허용하되, 드래그는 통과) */
+    #bag-scroll-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 5;
+      touch-action: pan-y;
+      pointer-events: none; /* 여기서 핵심: 드래그 이벤트는 이미지로 전달됨 */
+    }
   </style>
 </head>
 <body>
 
-  <img src="https://gi.esmplus.com/pipe0801/MASMARULEZ/common/all-noti.jpg" />
-  <img src="https://gi.esmplus.com/pipe0801/MASMARULEZ/common/hp-all-top.jpg" />
+<div id="bag-wrapper">
+  <div id="bag-scroll-overlay"></div> <!-- 스크롤 핫존 -->
+  <div id="bag360">로딩 중...</div>
+</div>
 
-  <div id="bag-wrapper">
-    <div id="bag360">로딩 중...</div>
-  </div>
+<script>
+  const imageUrls = [];
+  for (let i = 1; i <= 37; i++) {
+    imageUrls.push(`https://enj161203.diskn.com/product/tshirts_test/test/레이어 ${i}.JPG`);
+  }
 
+  const bag360 = document.getElementById('bag360');
+  const bagRatio = 1326 / 800;
+  let currentFrame = 0;
+
+  function setBagSize() {
+    const width = bag360.clientWidth;
+    const height = width * bagRatio;
+    bag360.style.height = `${height}px`;
+
+    $(bag360).spritespin("destroy");
+    $(bag360).spritespin({
+      source: imageUrls,
+      width: width,
+      height: height,
+      responsive: false,
+      animate: false,
+      frame: currentFrame,
+      sense: -1,
+      plugins: ['360', 'drag'],
+      dragAxis: 'x'
+    });
+
+    $(bag360).on("onFrame", function(_, data){
+      currentFrame = data.frame;
+    });
+  }
+
+  function updateBagHeightOnly() {
+    const width = bag360.clientWidth;
+    const height = width * bagRatio;
+    bag360.style.height = `${height}px`;
+  }
+
+  window.addEventListener('load', setBagSize);
+  window.addEventListener('resize', () => {
+    setTimeout(updateBagHeightOnly, 100);
+  });
+</script>
+
+</body>
+</html>
+
+<img src="https://enj161203.diskn.com/product/tshirts_test/tshirts_test01.jpg" />
   <img src="https://enj161203.diskn.com/product/tshirts_test/tshirts_test02.jpg" />
   <img src="https://enj161203.diskn.com/product/tshirts_test/tshirts_test03.jpg" />
   <img src="https://enj161203.diskn.com/product/tshirts_test/tshirts_test04.jpg" />
@@ -101,115 +181,5 @@
 
   <img src="https://gi.esmplus.com/pipe0801/MASMARULEZ/common/c-bottom.jpg" />
 
-  <script>
-    const imageUrls = [];
-    for (let i = 1; i <= 37; i++) {
-      const url = `https://enj161203.diskn.com/product/tshirts_test/test/레이어${String(i).padStart(2, '0')}.jpg`;
-      imageUrls.push(encodeURI(url));
-    }
-
-    const bag360 = document.getElementById('bag360');
-    const bagRatio = 1326 / 800;
-    let currentFrame = 0;
-    let spinApi = null;
-
-    let frameFloat = 0;
-    let isDragging = false;
-    const speedFactor = 0.2; // frames per pixel
-
-    let lastTouchX = 0;
-    let lastMoveTime = 0;
-    let lastSpeed = 0;
-    let inertiaVelocity = 0;
-    let inertiaInterval = null;
-
-    function setBagSize() {
-      const width = bag360.clientWidth;
-      const height = width * bagRatio;
-      bag360.style.height = `${height}px`;
-
-      $(bag360).spritespin("destroy");
-      $(bag360).spritespin({
-        source: imageUrls,
-        width: width,
-        height: height,
-        responsive: false,
-        animate: false,
-        frame: currentFrame,
-        sense: -1,
-        plugins: ['360']
-      });
-
-      spinApi = $(bag360).spritespin("api");
-      frameFloat = currentFrame;
-      spinApi.onFrame = (e, data) => {
-        currentFrame = data.frame;
-      };
-    }
-
-    function updateBagHeightOnly() {
-      const width = bag360.clientWidth;
-      const height = width * bagRatio;
-      bag360.style.height = `${height}px`;
-    }
-
-    window.addEventListener('load', setBagSize);
-    window.addEventListener('resize', () => {
-      setTimeout(updateBagHeightOnly, 100);
-    });
-
-    function updateFrame() {
-      if (!spinApi) return;
-      currentFrame = ((Math.round(frameFloat) % spinApi.frames) + spinApi.frames) % spinApi.frames;
-      spinApi.frame = currentFrame;
-      spinApi.updateFrame();
-    }
-
-    function pointerDown(e) {
-      if (inertiaInterval) clearInterval(inertiaInterval);
-      isDragging = true;
-      lastTouchX = e.clientX;
-      lastMoveTime = Date.now();
-      lastSpeed = 0;
-      bag360.setPointerCapture(e.pointerId);
-    }
-
-    function pointerMove(e) {
-      if (!isDragging) return;
-      const dx = e.clientX - lastTouchX;
-      const dt = Date.now() - lastMoveTime;
-      frameFloat -= dx * speedFactor;
-      updateFrame();
-
-      if (dt > 0) {
-        lastSpeed = dx / dt;
-        lastTouchX = e.clientX;
-        lastMoveTime = Date.now();
-      }
-    }
-
-    function endPointer(e) {
-      if (!isDragging) return;
-      isDragging = false;
-      bag360.releasePointerCapture(e.pointerId);
-      inertiaVelocity = lastSpeed * speedFactor;
-      if (Math.abs(inertiaVelocity) < 0.01) return;
-
-      inertiaInterval = setInterval(() => {
-        frameFloat -= inertiaVelocity * 16;
-        updateFrame();
-        inertiaVelocity *= 0.95;
-        if (Math.abs(inertiaVelocity) < 0.01) {
-          clearInterval(inertiaInterval);
-          inertiaInterval = null;
-        }
-      }, 16);
-    }
-
-    bag360.addEventListener('pointerdown', pointerDown);
-    bag360.addEventListener('pointermove', pointerMove);
-    bag360.addEventListener('pointerup', endPointer);
-    bag360.addEventListener('pointercancel', endPointer);
-  </script>
 </body>
 </html>

@@ -104,7 +104,8 @@
   <script>
     const imageUrls = [];
     for (let i = 1; i <= 37; i++) {
-      imageUrls.push(`https://enj161203.diskn.com/product/tshirts_test/test/레이어 ${i}.JPG`);
+      const url = `https://enj161203.diskn.com/product/tshirts_test/test/레이어${i}.JPG`;
+      imageUrls.push(encodeURI(url));
     }
 
     const bag360 = document.getElementById('bag360');

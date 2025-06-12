@@ -66,12 +66,12 @@
     const bag360 = document.getElementById('bag360');
     const bagRatio = 1326 / 800;
     let currentFrame = 0;
+    let api;
 
-    function setBagSize() {
+    function initSpritespin() {
       const width = bag360.clientWidth;
       const height = width * bagRatio;
       bag360.style.height = `${height}px`;
-
       $(bag360).spritespin('destroy');
       $(bag360).spritespin({
         source: imageUrls,
@@ -81,31 +81,25 @@
         animate: false,
         frame: currentFrame,
         sense: -1,
-        plugins: ['360', 'drag'],
-        dragAxis: 'x'
+        plugins: ['360'],  // drag 플러그인 제거
       });
-
-      $(bag360).on('onFrame', function (_, data) {
-        currentFrame = data.frame;
-      });
+      api = $('#bag360').spritespin('api');
     }
 
-    window.addEventListener('load', setBagSize);
+    window.addEventListener('load', initSpritespin);
     window.addEventListener('resize', () => {
-      setTimeout(() => {
-        const width = bag360.clientWidth;
-        bag360.style.height = `${width * bagRatio}px`;
-      }, 100);
+      setTimeout(initSpritespin, 100);
     });
 
-    // 관성 드래그 로직 (테스트용: 속도 크게)
+    // 커스텀 드래그 + 관성 로직
     let lastX = 0, lastTime = 0, velocity = 0;
-    const api = () => $('#bag360').spritespin('api');
 
     function onPointerDown(e) {
       bag360.setPointerCapture(e.pointerId);
       lastX = e.clientX;
       lastTime = performance.now();
+      // 애니메이션 중지
+      gsap.killTweensOf(window.inertiaObj || {});
     }
 
     function onPointerMove(e) {
@@ -113,8 +107,11 @@
       const now = performance.now();
       const dx = e.clientX - lastX;
       const dt = now - lastTime;
-      // 속도 스케일을 크게 해서 테스트
-      velocity = (dx / dt) * 2000;  // 기본 *100 → *2000으로 대폭 증가
+      // 바로 프레임 업데이트
+      currentFrame = (currentFrame + dx * -0.2 + api.source.length) % api.source.length;
+      api.updateFrame(Math.round(currentFrame));
+      // 속도 계산
+      velocity = dx / dt * 2000;
       lastX = e.clientX;
       lastTime = now;
     }
@@ -122,14 +119,15 @@
     function onPointerUp(e) {
       if (!bag360.hasPointerCapture(e.pointerId)) return;
       bag360.releasePointerCapture(e.pointerId);
-      const sprAPI = api();
-      const startFrame = sprAPI.frame;
-
+      // InertiaPlugin 또는 대체 로직
+      const start = currentFrame;
+      window.inertiaObj = { frame: start };
       console.log('Trigger inertia with velocity:', velocity);
-      gsap.to({ frame: startFrame }, {
+      gsap.to(window.inertiaObj, {
         inertia: { frame: velocity },
         onUpdate(obj) {
-          sprAPI.updateFrame(Math.round(obj.frame));
+          currentFrame = ((obj.frame % api.source.length) + api.source.length) % api.source.length;
+          api.updateFrame(Math.round(currentFrame));
         },
         ease: 'power3.out'
       });
@@ -139,6 +137,7 @@
     bag360.addEventListener('pointermove', onPointerMove);
     bag360.addEventListener('pointerup', onPointerUp);
     bag360.addEventListener('pointercancel', onPointerUp);
+    bag360.addEventListener('lostpointercapture', onPointerUp);
   </script>
 </body>
 </html>

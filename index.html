@@ -48,7 +48,8 @@
       const now = performance.now();
       const dxTotal = e.clientX - startX;
       // 수평 드래그 판별 임계값
-      if (!hasDragged && Math.abs(dxTotal) > 5) {
+      if (!hasDragged && Math.abs(dxTotal) > 0) {  // 수평dx가 조금만 있어도 바로 드래그 인식
+
         hasDragged = true;
         cancelAnimationFrame(inertiaId);  // 실제 드래그 시작 시 관성 취소
       }

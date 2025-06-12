@@ -3,78 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Masmarulez</title>
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: sans-serif;
-      background: #fff;
-    }
-
-    img {
-      width: 100%;
-      height: auto;
-      display: block;
-      margin: auto;
-    }
-
-    .video-box {
-      position: relative;
-      width: 100%;
-      margin: 0 auto;
-      overflow: hidden;
-    }
-
-    .video-box iframe {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-    }
-
-    /* 모바일: 9:16 비율 유지 */
-    @media (max-width: 767px) {
-      img {
-        max-width: 100%;
-      }
-
-      .video-box {
-        max-width: 100%;
-        padding-top: 177.78%;
-      }
-    }
-
-    /* PC: 적절한 세로 제한 + 비율 유지 */
-    @media (min-width: 768px) {
-      img {
-        max-width: 900px;
-      }
-
-      .video-box {
-        width: 100%;
-        max-width: 540px; /* 9:16 기준 */
-        aspect-ratio: 9 / 16;
-        height: auto;
-        max-height: 90vh; /* 화면보다 너무 길지 않도록 제한 */
-      }
-    }
-  </style>
-</head>
-<body>
-
-  <img src="https://gi.esmplus.com/pipe0801/MASMARULEZ/common/all-noti.jpg" />
-  <img src="https://gi.esmplus.com/pipe0801/MASMARULEZ/common/hp-all-top.jpg" />
-
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8">
-  <title>360도 가방 회전</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/spritespin@4.0.11/release/spritespin.js"></script>
+  <title>360도 가방 회전 (Inertia)</title>
   <style>
     html, body {
       margin: 0;
@@ -83,25 +12,22 @@
       min-height: 100%;
       height: auto;
       overflow-x: hidden;
+      font-family: sans-serif;
     }
-
     #bag-wrapper {
       position: relative;
-      width: 100%;
+      width: 100vw;
       padding: 5vh 0;
       display: flex;
       justify-content: center;
       background: #ffffff;
     }
-
     #bag360 {
       width: 100%;
       max-width: 600px;
       background-color: transparent;
       pointer-events: auto;
     }
-
-    /* 세로 스크롤 핫존 (터치는 허용하되, 드래그는 통과) */
     #bag-scroll-overlay {
       position: absolute;
       top: 0;
@@ -110,76 +36,98 @@
       height: 100%;
       z-index: 5;
       touch-action: pan-y;
-      pointer-events: none; /* 여기서 핵심: 드래그 이벤트는 이미지로 전달됨 */
+      pointer-events: none;
     }
   </style>
+  <!-- 라이브러리 로드 -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/spritespin@4.0.11/release/spritespin.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.0/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.0/InertiaPlugin.min.js"></script>
+  <script>
+    gsap.registerPlugin(InertiaPlugin);
+  </script>
 </head>
 <body>
+  <div id="bag-wrapper">
+    <div id="bag-scroll-overlay"></div>
+    <div id="bag360">로딩 중...</div>
+  </div>
 
-<div id="bag-wrapper">
-  <div id="bag-scroll-overlay"></div> <!-- 스크롤 핫존 -->
-  <div id="bag360">로딩 중...</div>
-</div>
+  <script>
+    // 이미지 URL 배열 생성
+    const imageUrls = [];
+    for (let i = 1; i <= 37; i++) {
+      imageUrls.push(`https://enj161203.diskn.com/product/tshirts_test/test/레이어 ${i}.JPG`);
+    }
 
-<script>
-  const imageUrls = [];
-  for (let i = 1; i <= 37; i++) {
-    imageUrls.push(`https://enj161203.diskn.com/product/tshirts_test/test/레이어 ${i}.JPG`);
-  }
+    const bag360 = document.getElementById('bag360');
+    const bagRatio = 1326 / 800;
+    let currentFrame = 0;
 
-  const bag360 = document.getElementById('bag360');
-  const bagRatio = 1326 / 800;
-  let currentFrame = 0;
+    function setBagSize() {
+      const width = bag360.clientWidth;
+      const height = width * bagRatio;
+      bag360.style.height = `${height}px`;
 
-  function setBagSize() {
-    const width = bag360.clientWidth;
-    const height = width * bagRatio;
-    bag360.style.height = `${height}px`;
+      $(bag360).spritespin('destroy');
+      $(bag360).spritespin({
+        source: imageUrls,
+        width: width,
+        height: height,
+        responsive: false,
+        animate: false,
+        frame: currentFrame,
+        sense: -1,
+        plugins: ['360', 'drag'],
+        dragAxis: 'x'
+      });
 
-    $(bag360).spritespin("destroy");
-    $(bag360).spritespin({
-      source: imageUrls,
-      width: width,
-      height: height,
-      responsive: false,
-      animate: false,
-      frame: currentFrame,
-      sense: -1,
-      plugins: ['360', 'drag'],
-      dragAxis: 'x'
+      $(bag360).on('onFrame', function (_, data) {
+        currentFrame = data.frame;
+      });
+    }
+
+    window.addEventListener('load', setBagSize);
+    window.addEventListener('resize', () => {
+      setTimeout(() => {
+        const width = bag360.clientWidth;
+        bag360.style.height = `${width * bagRatio}px`;
+      }, 100);
     });
 
-    $(bag360).on("onFrame", function(_, data){
-      currentFrame = data.frame;
+    // 관성 드래그 로직
+    let lastX = 0, lastTime = 0, velocity = 0;
+    const api = () => $('#bag360').spritespin('api');
+
+    bag360.addEventListener('pointerdown', e => {
+      cancelAnimationFrame(window._inertiaAnim);
+      lastX = e.pageX;
+      lastTime = Date.now();
     });
-  }
 
-  function updateBagHeightOnly() {
-    const width = bag360.clientWidth;
-    const height = width * bagRatio;
-    bag360.style.height = `${height}px`;
-  }
+    bag360.addEventListener('pointermove', e => {
+      if (!(e.buttons & 1)) return; // 드래그 중이 아닐 때 무시
+      const now = Date.now();
+      const dx = e.pageX - lastX;
+      const dt = now - lastTime;
+      velocity = dx / dt * 100; // 속도(px/sec) 스케일링
+      lastX = e.pageX;
+      lastTime = now;
+    });
 
-  window.addEventListener('load', setBagSize);
-  window.addEventListener('resize', () => {
-    setTimeout(updateBagHeightOnly, 100);
-  });
-</script>
+    bag360.addEventListener('pointerup', () => {
+      const sprAPI = api();
+      const startFrame = sprAPI.frame;
 
-</body>
-</html>
-
-<img src="https://enj161203.diskn.com/product/tshirts_test/tshirts_test01.jpg" />
-  <img src="https://enj161203.diskn.com/product/tshirts_test/tshirts_test02.jpg" />
-  <img src="https://enj161203.diskn.com/product/tshirts_test/tshirts_test03.jpg" />
-  <img src="https://enj161203.diskn.com/product/tshirts_test/tshirts_test04.jpg" />
-  <img src="https://enj161203.diskn.com/product/tshirts_test/tshirts_test05.jpg" />
-  <img src="https://enj161203.diskn.com/product/tshirts_test/tshirts_test06.jpg" />
-  <img src="https://enj161203.diskn.com/product/tshirts_test/tshirts_test07.gif" />
-  <img src="https://enj161203.diskn.com/product/tshirts_test/tshirts_test08.jpg" />
-  <img src="https://enj161203.diskn.com/product/tshirts_test/tshirts_test09.jpg" />
-
-  <img src="https://gi.esmplus.com/pipe0801/MASMARULEZ/common/c-bottom.jpg" />
-
+      gsap.to({ frame: startFrame }, {
+        inertia: { frame: velocity },
+        onUpdate(obj) {
+          sprAPI.updateFrame(Math.round(obj.frame));
+        },
+        ease: 'power3.out'
+      });
+    });
+  </script>
 </body>
 </html>

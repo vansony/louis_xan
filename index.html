@@ -1,15 +1,13 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>360도 가방 회전 (Canvas + 순수 JS Inertia)</title>
   <style>
     html, body {
-      margin: 0;
-      padding: 0;
+      margin: 0; padding: 0;
       background: #fff;
-      height: auto;
       overflow-y: auto;
       font-family: sans-serif;
       touch-action: auto;
@@ -35,7 +33,6 @@
   <div id="bag-wrapper">
     <canvas id="bagCanvas"></canvas>
   </div>
-
   <script>
     const canvas = document.getElementById('bagCanvas');
     const ctx = canvas.getContext('2d');
@@ -43,14 +40,9 @@
     const images = [];
     let currentFrame = 0;
     let isDragging = false;
-    let hasMoved = false;
-    let startX = 0, startY = 0;
-    let lastX = 0;
-    let velocity = 0;
-    let lastTime = 0;
-    let inertiaId = null;
+    let startX = 0, lastX = 0, lastTime = 0, velocity = 0, inertiaId;
 
-    // 이미지 프리로드 및 초기 캔버스 설정
+    // 이미지 로드 및 캔버스 설정
     for (let i = 1; i <= frameCount; i++) {
       const img = new Image();
       img.src = `https://enj161203.diskn.com/product/tshirts_test/test/레이어 ${i}.JPG`;
@@ -72,55 +64,46 @@
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     }
 
-    // 포인터 다운: 방향 판별 초기화, 관성은 지우지 않음
+    // 포인터 다운: 시작 위치 기록, 관성 중지
     canvas.addEventListener('pointerdown', e => {
       startX = lastX = e.clientX;
-      startY = e.clientY;
       lastTime = performance.now();
-      hasMoved = false;
+      isDragging = false;
+      cancelAnimationFrame(inertiaId);
     });
 
-    // 포인터 이동: 첫 움직임에서 방향 판별
+    // 포인터 이동: 수평 이동 있으면 드래그 시작 & 회전
     canvas.addEventListener('pointermove', e => {
-      const dx = e.clientX - startX;
-      const dy = e.clientY - startY;
-      if (!hasMoved) {
-        // 수평 이동이 더 크면 드래그 시작
-        if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 5) {
-          isDragging = true;
-          hasMoved = true;
-          canvas.setPointerCapture(e.pointerId);
-          cancelAnimationFrame(inertiaId);
-          canvas.style.cursor = 'grabbing';
-          lastX = e.clientX;
-          lastTime = performance.now();
-        } else if (Math.abs(dy) > Math.abs(dx)) {
-          // 수직 스크롤 진입 시 드래그 중지
-          isDragging = false;
-          return;
-        }
-      }
-      if (!isDragging) return;
-
+      const dxTotal = e.clientX - startX;
       const now = performance.now();
       const dt = now - lastTime;
-      const moveX = e.clientX - lastX;
-      velocity = moveX / dt;
-      currentFrame -= moveX * 0.2;
-      drawFrame(Math.round(currentFrame));
-      lastX = e.clientX;
-      lastTime = now;
-    }, { passive: false });
+      // 드래그 시작 판단: 수평 이동이 5px 넘으면
+      if (!isDragging && Math.abs(dxTotal) > 5) {
+        isDragging = true;
+        canvas.setPointerCapture(e.pointerId);
+        canvas.style.cursor = 'grabbing';
+        lastX = e.clientX;
+        lastTime = now;
+      }
+      if (isDragging) {
+        const dx = e.clientX - lastX;
+        velocity = dx / dt;
+        currentFrame -= dx * 0.2;
+        drawFrame(Math.round(currentFrame));
+        lastX = e.clientX;
+        lastTime = now;
+      }
+      // 수직 스크롤은 기본 동작으로 유지
+    }, { passive: true });
 
-    // 포인터 업: 관성 재시작
+    // 포인터 업: 관성 적용
     canvas.addEventListener('pointerup', e => {
       if (isDragging) {
         canvas.releasePointerCapture(e.pointerId);
         canvas.style.cursor = 'grab';
         isDragging = false;
-        const decay = 0.95;
         (function inertia() {
-          velocity *= decay;
+          velocity *= 0.95;
           if (Math.abs(velocity) < 0.01) return;
           currentFrame -= velocity * 3.5;
           drawFrame(Math.round(currentFrame));
@@ -136,8 +119,6 @@
         isDragging = false;
       }
     });
-
-    window.addEventListener('resize', () => drawFrame(Math.round(currentFrame)));
   </script>
 </body>
 </html>

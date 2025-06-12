@@ -3,14 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>360도 가방 회전 (Inertia 적용 테스트용)</title>
+  <title>360도 가방 회전 (Inertia + Vertical Scroll 대응)</title>
   <style>
     html, body {
       margin: 0;
       padding: 0;
       background: #ffffff;
-      min-height: 100%;
-      height: auto;
+      height: 100%;
       overflow-x: hidden;
       font-family: sans-serif;
     }
@@ -26,17 +25,7 @@
       width: 100%;
       max-width: 600px;
       background-color: transparent;
-      touch-action: none;
-    }
-    #bag-scroll-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 5;
-      touch-action: pan-y;
-      pointer-events: none;
+      touch-action: pan-y; /* 세로 스크롤 허용, 가로는 JS로 처리 */
     }
   </style>
 
@@ -52,7 +41,6 @@
 </head>
 <body>
   <div id="bag-wrapper">
-    <div id="bag-scroll-overlay"></div>
     <div id="bag360">로딩 중...</div>
   </div>
 
@@ -77,54 +65,62 @@
         source: imageUrls,
         width: width,
         height: height,
-        responsive: false,
         animate: false,
         frame: currentFrame,
-        sense: -1,
-        plugins: ['360'],  // drag 플러그인 제거
+        plugins: ['360']
       });
       api = $('#bag360').spritespin('api');
     }
 
     window.addEventListener('load', initSpritespin);
-    window.addEventListener('resize', () => {
-      setTimeout(initSpritespin, 100);
-    });
+    window.addEventListener('resize', () => setTimeout(initSpritespin, 100));
 
-    // 커스텀 드래그 + 관성 로직
-    let lastX = 0, lastTime = 0, velocity = 0;
+    // 커스텀 드래그 + 관성 로직 (수평 드래그만 처리)
+    let dragging = false;
+    let lastX = 0, lastY = 0, lastTime = 0;
+    let velocity = 0;
 
     function onPointerDown(e) {
-      bag360.setPointerCapture(e.pointerId);
+      dragging = true;
       lastX = e.clientX;
+      lastY = e.clientY;
       lastTime = performance.now();
-      // 애니메이션 중지
+      // 진행 중 tween 중지
       gsap.killTweensOf(window.inertiaObj || {});
     }
 
     function onPointerMove(e) {
-      if (!bag360.hasPointerCapture(e.pointerId)) return;
+      if (!dragging) return;
       const now = performance.now();
       const dx = e.clientX - lastX;
+      const dy = e.clientY - lastY;
       const dt = now - lastTime;
-      // 바로 프레임 업데이트
-      currentFrame = (currentFrame + dx * -0.2 + api.source.length) % api.source.length;
-      api.updateFrame(Math.round(currentFrame));
-      // 속도 계산
-      velocity = dx / dt * 2000;
-      lastX = e.clientX;
-      lastTime = now;
+      // 수평 이동이 수직보다 큰 경우만 처리
+      if (Math.abs(dx) > Math.abs(dy)) {
+        e.preventDefault();  // 가로 슬라이드 제어
+        // 프레임 업데이트
+        currentFrame = (currentFrame + dx * -0.2 + api.source.length) % api.source.length;
+        api.updateFrame(Math.round(currentFrame));
+        // 속도 갱신(px/ms)
+        velocity = dx / dt;
+        lastX = e.clientX;
+        lastY = e.clientY;
+        lastTime = now;
+      } else {
+        // 수직 스크롤로 전환
+        dragging = false;
+      }
     }
 
     function onPointerUp(e) {
-      if (!bag360.hasPointerCapture(e.pointerId)) return;
-      bag360.releasePointerCapture(e.pointerId);
-      // InertiaPlugin 또는 대체 로직
+      if (!dragging) return;
+      dragging = false;
+      // 관성 애니메이션
       const start = currentFrame;
       window.inertiaObj = { frame: start };
       console.log('Trigger inertia with velocity:', velocity);
       gsap.to(window.inertiaObj, {
-        inertia: { frame: velocity },
+        inertia: { frame: velocity * 500 },  // 상수로 관성 강도 조절
         onUpdate(obj) {
           currentFrame = ((obj.frame % api.source.length) + api.source.length) % api.source.length;
           api.updateFrame(Math.round(currentFrame));
@@ -133,11 +129,11 @@
       });
     }
 
+    // 이벤트 등록 (passive: false 로 제어 가능)
     bag360.addEventListener('pointerdown', onPointerDown);
-    bag360.addEventListener('pointermove', onPointerMove);
+    bag360.addEventListener('pointermove', onPointerMove, { passive: false });
     bag360.addEventListener('pointerup', onPointerUp);
     bag360.addEventListener('pointercancel', onPointerUp);
-    bag360.addEventListener('lostpointercapture', onPointerUp);
   </script>
 </body>
 </html>

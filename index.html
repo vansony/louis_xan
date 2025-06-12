@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>360도 가방 회전 (Inertia)</title>
+  <title>360도 가방 회전 (Inertia 적용)</title>
   <style>
     html, body {
       margin: 0;
@@ -39,6 +39,7 @@
       pointer-events: none;
     }
   </style>
+
   <!-- 라이브러리 로드 -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/spritespin@4.0.11/release/spritespin.js"></script>
@@ -46,6 +47,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.0/InertiaPlugin.min.js"></script>
   <script>
     gsap.registerPlugin(InertiaPlugin);
+    console.log("InertiaPlugin loaded?", !!window.InertiaPlugin);
   </script>
 </head>
 <body>
@@ -101,22 +103,23 @@
     const api = () => $('#bag360').spritespin('api');
 
     bag360.addEventListener('pointerdown', e => {
-      cancelAnimationFrame(window._inertiaAnim);
+      bag360.setPointerCapture(e.pointerId);
       lastX = e.pageX;
       lastTime = Date.now();
     });
 
     bag360.addEventListener('pointermove', e => {
-      if (!(e.buttons & 1)) return; // 드래그 중이 아닐 때 무시
+      if (!(e.buttons & 1)) return;
       const now = Date.now();
       const dx = e.pageX - lastX;
       const dt = now - lastTime;
-      velocity = dx / dt * 100; // 속도(px/sec) 스케일링
+      velocity = dx / dt * 100;
       lastX = e.pageX;
       lastTime = now;
     });
 
-    bag360.addEventListener('pointerup', () => {
+    bag360.addEventListener('pointerup', e => {
+      bag360.releasePointerCapture(e.pointerId);
       const sprAPI = api();
       const startFrame = sprAPI.frame;
 
@@ -127,6 +130,10 @@
         },
         ease: 'power3.out'
       });
+    });
+
+    bag360.addEventListener('pointercancel', e => {
+      bag360.releasePointerCapture(e.pointerId);
     });
   </script>
 </body>

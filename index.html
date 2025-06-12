@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>360도 가방 회전 (Canvas + JS Inertia + Scroll Rotation)</title>
+  <title>360도 가방 회전 (Canvas + JS Inertia)</title>
   <style>
     html, body {
       margin: 0; padding: 0;
@@ -41,7 +41,6 @@
     let currentFrame = 0;
     let pointerDown = false;
     let lastX = 0, lastTime = 0, velocity = 0, inertiaId;
-    let lastScrollY = window.scrollY;
 
     // 이미지 로드 및 캔버스 설정
     for (let i = 1; i <= frameCount; i++) {
@@ -75,7 +74,7 @@
       canvas.style.cursor = 'grabbing';
     });
 
-    // 포인터 이동: 수평 드래그 회전 + 세로 스크롤은 브라우저 처리
+    // 포인터 이동: 수평 드래그 회전
     canvas.addEventListener('pointermove', e => {
       if (!pointerDown) return;
       const now = performance.now();
@@ -86,7 +85,7 @@
       drawFrame(Math.round(currentFrame));
       lastX = e.clientX;
       lastTime = now;
-    }, { passive: true });
+    });
 
     // 포인터 업: 관성 적용
     canvas.addEventListener('pointerup', e => {
@@ -102,21 +101,13 @@
         inertiaId = requestAnimationFrame(inertia);
       })();
     });
+
     canvas.addEventListener('pointercancel', e => {
       if (!pointerDown) return;
       pointerDown = false;
       canvas.releasePointerCapture(e.pointerId);
       canvas.style.cursor = 'grab';
     });
-
-    // 스크롤 이벤트로도 회전 (항상 동일 방향)
-    window.addEventListener('scroll', () => {
-      const scrollY = window.scrollY;
-      const dy = scrollY - lastScrollY;
-      currentFrame -= dy * 0.3;
-      drawFrame(Math.round(currentFrame));
-      lastScrollY = scrollY;
-    }, { passive: true });
 
     // 리사이즈 시 현재 프레임 유지
     window.addEventListener('resize', () => drawFrame(Math.round(currentFrame)));

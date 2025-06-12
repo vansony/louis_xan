@@ -21,12 +21,13 @@
       padding: 20px;
     }
     canvas {
-      width: auto;
+      width: 100%;            /* 화면 너비에 맞춰 리사이즈 */
       height: auto;
+      max-width: 100vw;
+      max-height: 100vh;
       background: #fff;
       cursor: grab;
       touch-action: none;
-      /* 원본 해상도로 표시 */
     }
   </style>
 </head>
@@ -53,7 +54,7 @@
       img.src = `https://enj161203.diskn.com/product/tshirts_test/test/레이어 ${i}.JPG`;
       if (i === 1) {
         img.onload = () => {
-          // 첫 이미지 로드 후 원본 크기로 캔버스 설정
+          // 첫 이미지 로드 후 원본 해상도를 기준으로 캔버스 내부 픽셀 크기 설정
           canvas.width = img.naturalWidth;
           canvas.height = img.naturalHeight;
           drawFrame(0);
@@ -88,13 +89,13 @@
       const now = performance.now();
       const dt = now - lastTime;
       velocity = dx / dt;
-      currentFrame = currentFrame - dx * 0.2;
+      currentFrame -= dx * 0.2;
       drawFrame(Math.round(currentFrame));
       lastX = e.clientX;
       lastTime = now;
     });
 
-    // 드래그 끝 & 관성 (속도 절반)
+    // 드래그 끝 & 관성 (속도 70% 수준)
     canvas.addEventListener('pointerup', e => {
       isDragging = false;
       canvas.releasePointerCapture(e.pointerId);
@@ -103,15 +104,15 @@
       function inertia() {
         velocity *= decay;
         if (Math.abs(velocity) < 0.01) return;
-        // 관성 속도를 절반으로 조정 (기존 *10 -> *5)
-        currentFrame = currentFrame - velocity * 5;
+        // 관성 속도 조절: 기존 *5 → *3.5 (70%)
+        currentFrame -= velocity * 3.5;
         drawFrame(Math.round(currentFrame));
         inertiaId = requestAnimationFrame(inertia);
       }
       inertia();
     });
 
-    // 캔버스 밖에서 마우스 놓을 경우 처리
+    // 캔버스 밖에서 포인터 해제 시 처리
     canvas.addEventListener('pointercancel', e => {
       isDragging = false;
       canvas.releasePointerCapture(e.pointerId);

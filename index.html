@@ -104,8 +104,8 @@
       canvas.style.cursor = 'grab';
     }
     canvas.addEventListener('pointerup', endInteraction);
-    canvas.addEventListener('pointercancel', endInteraction);
-    canvas.addEventListener('lostpointercapture', endInteraction);
+    
+    
 
     // 리사이즈
     window.addEventListener('resize', () => drawFrame(Math.round(currentFrame)));

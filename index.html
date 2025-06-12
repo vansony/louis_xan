@@ -10,24 +10,23 @@
       padding: 0;
       background: #fff;
       height: 100%;
-      overflow-x: hidden;
+      overflow: auto;
       font-family: sans-serif;
-      touch-action: none; /* 모든 터치 제스처 JS에서 처리 */
+      touch-action: none;
     }
     #bag-wrapper {
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100%;
+      padding: 20px;
     }
     canvas {
-      max-width: 90vw;
-      max-height: 90vh;
       width: auto;
       height: auto;
       background: #fff;
       cursor: grab;
       touch-action: none;
+      /* 원본 해상도로 표시 */
     }
   </style>
 </head>
@@ -43,42 +42,31 @@
     const images = [];
     let currentFrame = 0;
     let isDragging = false;
-    let startX = 0;
     let lastX = 0;
     let velocity = 0;
     let lastTime = 0;
     let inertiaId = null;
 
-    // 캔버스 사이즈 설정
-    function resizeCanvas() {
-      const ratio = 1326 / 800;
-      const vw = window.innerWidth * 0.9;
-      const vh = window.innerHeight * 0.9;
-      let w = vw;
-      let h = vw * (800 / 1326);
-      if (h > vh) {
-        h = vh;
-        w = vh * (1326 / 800);
-      }
-      canvas.width = w;
-      canvas.height = h;
-      drawFrame(currentFrame);
-    }
-
-    // 이미지 프리로드
+    // 이미지 프리로드 및 캔버스 크기 설정
     for (let i = 1; i <= frameCount; i++) {
       const img = new Image();
       img.src = `https://enj161203.diskn.com/product/tshirts_test/test/레이어 ${i}.JPG`;
+      if (i === 1) {
+        img.onload = () => {
+          // 첫 이미지 로드 후 원본 크기로 캔버스 설정
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+          drawFrame(0);
+        };
+      }
       images.push(img);
     }
 
     // 특정 프레임 그리기
     function drawFrame(frame) {
-      const img = images[(frame + frameCount) % frameCount];
-      if (!img.complete) {
-        img.onload = () => drawFrame(frame);
-        return;
-      }
+      const idx = ((frame % frameCount) + frameCount) % frameCount;
+      const img = images[idx];
+      if (!img.complete) return;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     }
@@ -87,8 +75,7 @@
     canvas.addEventListener('pointerdown', e => {
       isDragging = true;
       canvas.setPointerCapture(e.pointerId);
-      startX = e.clientX;
-      lastX = startX;
+      lastX = e.clientX;
       lastTime = performance.now();
       cancelAnimationFrame(inertiaId);
       canvas.style.cursor = 'grabbing';
@@ -101,13 +88,13 @@
       const now = performance.now();
       const dt = now - lastTime;
       velocity = dx / dt;
-      currentFrame = (currentFrame - dx * 0.2 + frameCount) % frameCount;
+      currentFrame = currentFrame - dx * 0.2;
       drawFrame(Math.round(currentFrame));
       lastX = e.clientX;
       lastTime = now;
     });
 
-    // 드래그 끝 & 관성
+    // 드래그 끝 & 관성 (속도 절반)
     canvas.addEventListener('pointerup', e => {
       isDragging = false;
       canvas.releasePointerCapture(e.pointerId);
@@ -116,18 +103,20 @@
       function inertia() {
         velocity *= decay;
         if (Math.abs(velocity) < 0.01) return;
-        currentFrame = (currentFrame - velocity * 10 + frameCount) % frameCount;
+        // 관성 속도를 절반으로 조정 (기존 *10 -> *5)
+        currentFrame = currentFrame - velocity * 5;
         drawFrame(Math.round(currentFrame));
         inertiaId = requestAnimationFrame(inertia);
       }
       inertia();
     });
 
-    // 화면 리사이즈 대응
-    window.addEventListener('resize', resizeCanvas);
-
-    // 초기 실행
-    resizeCanvas();
+    // 캔버스 밖에서 마우스 놓을 경우 처리
+    canvas.addEventListener('pointercancel', e => {
+      isDragging = false;
+      canvas.releasePointerCapture(e.pointerId);
+      canvas.style.cursor = 'grab';
+    });
   </script>
 </body>
 </html>

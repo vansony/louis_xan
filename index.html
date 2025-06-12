@@ -85,6 +85,7 @@
     }
 
     #bag-wrapper {
+      position: relative;
       width: 100%;
       padding: 5vh 0;
       display: flex;
@@ -96,13 +97,27 @@
       width: 100%;
       max-width: 600px;
       background-color: transparent;
-      touch-action: none; /* JS에서 제어 */
+      pointer-events: auto;
+    }
+
+    /* 세로 스크롤을 유도하는 투명한 핫존 */
+    #bag-scroll-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 5;
+      touch-action: pan-y; /* 세로 스크롤만 허용 */
+      background-color: transparent;
+      pointer-events: auto;
     }
   </style>
 </head>
 <body>
 
 <div id="bag-wrapper">
+  <div id="bag-scroll-overlay"></div> <!-- 스크롤 핫존 -->
   <div id="bag360">로딩 중...</div>
 </div>
 
@@ -116,7 +131,6 @@
   const bagRatio = 1326 / 800;
   let currentFrame = 0;
 
-  // 최초 1회 실행: Spritespin 초기화
   function setBagSize() {
     const width = bag360.clientWidth;
     const height = width * bagRatio;
@@ -135,13 +149,12 @@
       dragAxis: 'x'
     });
 
-    // 현재 프레임 저장
+    // 프레임 저장
     $(bag360).on("onFrame", function(_, data){
       currentFrame = data.frame;
     });
   }
 
-  // 리사이즈 시 크기만 조정 (회전 상태 유지)
   function updateBagHeightOnly() {
     const width = bag360.clientWidth;
     const height = width * bagRatio;
@@ -152,31 +165,10 @@
   window.addEventListener('resize', () => {
     setTimeout(updateBagHeightOnly, 100);
   });
-
-  // 세로 스크롤 허용 로직 (가로 드래그는 prevent, 세로는 통과)
-  let startX = 0, startY = 0;
-  bag360.addEventListener('touchstart', e => {
-    startX = e.touches[0].clientX;
-    startY = e.touches[0].clientY;
-  });
-
-  bag360.addEventListener('touchmove', e => {
-    const dx = Math.abs(e.touches[0].clientX - startX);
-    const dy = Math.abs(e.touches[0].clientY - startY);
-
-    if (dy > dx) {
-      // 세로 스크롤: 통과
-      e.stopPropagation();
-    } else {
-      // 가로 드래그: 회전
-      e.preventDefault();
-    }
-  }, { passive: false });
 </script>
 
 </body>
 </html>
-
 
 
 

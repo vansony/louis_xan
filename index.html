@@ -5,107 +5,80 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>360도 가방 회전 (Canvas + JS Inertia)</title>
   <style>
-    html, body {
-      margin: 0; padding: 0;
-      background: #fff;
-      overflow-y: auto;
-      font-family: sans-serif;
-      touch-action: auto;
-    }
-    #bag-wrapper {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      width: 100vw;
-      margin: 0;
-    }
-    canvas {
-      display: block;
-      width: 100vw;
-      height: auto;
-      max-height: 100vh;
-      cursor: grab;
-      touch-action: pan-y;
-    }
+    html, body { margin: 0; padding: 0; background: #fff; overflow-y: auto; font-family: sans-serif; touch-action: auto; }
+    #bag-wrapper { display: flex; justify-content: center; align-items: center; width: 100vw; margin: 0; }
+    canvas { display: block; width: 100vw; height: auto; max-height: 100vh; cursor: grab; touch-action: pan-y; }
   </style>
 </head>
 <body>
-  <div id="bag-wrapper">
-    <canvas id="bagCanvas"></canvas>
-  </div>
+  <div id="bag-wrapper"><canvas id="bagCanvas"></canvas></div>
   <script>
     const canvas = document.getElementById('bagCanvas');
     const ctx = canvas.getContext('2d');
-    const frameCount = 37;
-    const images = [];
+    const frameCount = 37, images = [];
     let currentFrame = 0;
-    let pointerDown = false;
-    let lastX = 0, lastTime = 0, velocity = 0, inertiaId;
+    let pointerDown = false, hasDragged = false;
+    let startX = 0, lastX = 0, lastTime = 0, velocity = 0, inertiaId;
 
     // 이미지 로드 및 캔버스 설정
     for (let i = 1; i <= frameCount; i++) {
-      const img = new Image();
-      img.src = `https://enj161203.diskn.com/product/tshirts_test/test/레이어 ${i}.JPG`;
-      if (i === 1) {
-        img.onload = () => {
-          canvas.width = img.naturalWidth;
-          canvas.height = img.naturalHeight;
-          drawFrame(0);
-        };
-      }
+      const img = new Image(); img.src = `https://enj161203.diskn.com/product/tshirts_test/test/레이어 ${i}.JPG`;
+      if (i === 1) img.onload = () => { canvas.width = img.naturalWidth; canvas.height = img.naturalHeight; drawFrame(0); };
       images.push(img);
     }
 
     function drawFrame(frame) {
       const idx = ((frame % frameCount) + frameCount) % frameCount;
-      const img = images[idx];
-      if (!img.complete) return;
+      const img = images[idx]; if (!img.complete) return;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     }
 
-    // 포인터 다운: 회전 준비
+    // 포인터 다운
     canvas.addEventListener('pointerdown', e => {
-      pointerDown = true;
-      lastX = e.clientX;
-      lastTime = performance.now();
-      cancelAnimationFrame(inertiaId);
+      pointerDown = true; hasDragged = false;
+      startX = lastX = e.clientX; lastTime = performance.now();
       canvas.setPointerCapture(e.pointerId);
       canvas.style.cursor = 'grabbing';
     });
 
-    // 포인터 이동: 수평 드래그 회전
+    // 포인터 이동: 스크롤인 경우에는 hasDragged 유지되지 않음
     canvas.addEventListener('pointermove', e => {
       if (!pointerDown) return;
       const now = performance.now();
-      const dx = e.clientX - lastX;
-      const dt = now - lastTime;
-      velocity = dx / dt;
-      currentFrame -= dx * 0.2;
-      drawFrame(Math.round(currentFrame));
-      lastX = e.clientX;
-      lastTime = now;
-    });
-
-    // 포인터 업: 관성 적용
-    canvas.addEventListener('pointerup', e => {
-      if (!pointerDown) return;
-      pointerDown = false;
-      canvas.releasePointerCapture(e.pointerId);
-      canvas.style.cursor = 'grab';
-      (function inertia() {
-        velocity *= 0.95;
-        if (Math.abs(velocity) < 0.01) return;
-        currentFrame -= velocity * 3.5;
+      const dxTotal = e.clientX - startX;
+      // 수평 드래그 판별 임계값
+      if (!hasDragged && Math.abs(dxTotal) > 5) {
+        hasDragged = true;
+        cancelAnimationFrame(inertiaId);  // 실제 드래그 시작 시 관성 취소
+      }
+      if (hasDragged) {
+        const dx = e.clientX - lastX;
+        const dt = now - lastTime;
+        velocity = dx / dt;
+        currentFrame -= dx * 0.2;
         drawFrame(Math.round(currentFrame));
-        inertiaId = requestAnimationFrame(inertia);
-      })();
-    });
+        lastX = e.clientX; lastTime = now;
+      }
+      // 수직 스크롤은 기본 브라우저 동작 유지
+    }, { passive: true });
 
+    // 포인터 업: 관성 적용 (스크롤 시 hasDragged false 상태면 건너뜀)
+    canvas.addEventListener('pointerup', e => {
+      if (hasDragged) {
+        (function inertia() {
+          velocity *= 0.95;
+          if (Math.abs(velocity) < 0.01) return;
+          currentFrame -= velocity * 3.5;
+          drawFrame(Math.round(currentFrame));
+          inertiaId = requestAnimationFrame(inertia);
+        })();
+      }
+      pointerDown = false; canvas.releasePointerCapture(e.pointerId);
+      canvas.style.cursor = 'grab';
+    });
     canvas.addEventListener('pointercancel', e => {
-      if (!pointerDown) return;
-      pointerDown = false;
-      canvas.releasePointerCapture(e.pointerId);
+      pointerDown = false; canvas.releasePointerCapture(e.pointerId);
       canvas.style.cursor = 'grab';
     });
 

@@ -38,6 +38,10 @@
     canvas.addEventListener('pointerdown', e => {
       pointerDown = true; hasDragged = false;
       startX = lastX = e.clientX; lastTime = performance.now();
+      startY = e.clientY;
+      canvas.setPointerCapture(e.pointerId);
+      canvas.style.cursor = 'grabbing';
+    });
       canvas.setPointerCapture(e.pointerId);
       canvas.style.cursor = 'grabbing';
     });
@@ -47,9 +51,9 @@
       if (!pointerDown) return;
       const now = performance.now();
       const dxTotal = e.clientX - startX;
-      // 수평 드래그 판별 임계값
-      if (!hasDragged && Math.abs(dxTotal) > 0) {  // 수평dx가 조금만 있어도 바로 드래그 인식
-
+      const dyTotal = e.clientY - startY;
+      // 수평 이동이 수직 이동보다 클 때만 드래그로 인식
+      if (!hasDragged && Math.abs(dxTotal) > Math.abs(dyTotal) && Math.abs(dxTotal) > 0) {
         hasDragged = true;
         cancelAnimationFrame(inertiaId);  // 실제 드래그 시작 시 관성 취소
       }
@@ -59,9 +63,10 @@
         velocity = dx / dt;
         currentFrame -= dx * 0.2;
         drawFrame(Math.round(currentFrame));
-        lastX = e.clientX; lastTime = now;
+        lastX = e.clientX;
+        lastTime = now;
       }
-      // 수직 스크롤은 기본 브라우저 동작 유지
+      // 수직 또는 대각선(수직 우선) 스크롤 중일 땐 hasDragged가 false라 관성 유지
     }, { passive: true });
 
     // 포인터 업: 관성 적용 (스크롤 시 hasDragged false 상태면 건너뜀)

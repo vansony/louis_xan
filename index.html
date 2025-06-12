@@ -114,7 +114,9 @@
 
   const bag360 = document.getElementById('bag360');
   const bagRatio = 1326 / 800;
+  let currentFrame = 0;
 
+  // 최초 1회 실행: Spritespin 초기화
   function setBagSize() {
     const width = bag360.clientWidth;
     const height = width * bagRatio;
@@ -127,20 +129,32 @@
       height: height,
       responsive: false,
       animate: false,
+      frame: currentFrame,
       sense: -1,
       plugins: ['360', 'drag'],
       dragAxis: 'x'
     });
+
+    // 현재 프레임 저장
+    $(bag360).on("onFrame", function(_, data){
+      currentFrame = data.frame;
+    });
+  }
+
+  // 리사이즈 시 크기만 조정 (회전 상태 유지)
+  function updateBagHeightOnly() {
+    const width = bag360.clientWidth;
+    const height = width * bagRatio;
+    bag360.style.height = `${height}px`;
   }
 
   window.addEventListener('load', setBagSize);
   window.addEventListener('resize', () => {
-    setTimeout(setBagSize, 100);
+    setTimeout(updateBagHeightOnly, 100);
   });
 
-  // 🔧 스크롤 방해 방지: 터치 방향 판별 (x는 회전, y는 스크롤 허용)
-  let startX = 0;
-  let startY = 0;
+  // 세로 스크롤 허용 로직 (가로 드래그는 prevent, 세로는 통과)
+  let startX = 0, startY = 0;
   bag360.addEventListener('touchstart', e => {
     startX = e.touches[0].clientX;
     startY = e.touches[0].clientY;
@@ -151,17 +165,18 @@
     const dy = Math.abs(e.touches[0].clientY - startY);
 
     if (dy > dx) {
-      // 세로 스크롤일 경우 => 이벤트 막지 않음
-      e.stopPropagation(); // SpriteSpin 방지
+      // 세로 스크롤: 통과
+      e.stopPropagation();
     } else {
-      // 가로 회전일 경우 => 정상 동작
+      // 가로 드래그: 회전
       e.preventDefault();
     }
-  }, { passive: false }); // passive: false 필수 (preventDefault 쓸 수 있게)
+  }, { passive: false });
 </script>
 
 </body>
 </html>
+
 
 
 

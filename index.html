@@ -1,33 +1,31 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>360도 가방 회전 (Canvas + JS Inertia)</title>
   <style>
-    html, body { margin: 0; padding: 0; background: #fff; overflow-y: auto; font-family: sans-serif; touch-action: auto; }
-    #bag-wrapper { display: flex; justify-content: center; align-items: center; width: 100vw; margin: 0; }
-    canvas { display: block; width: 100vw; height: auto; max-height: 100vh; cursor: grab; touch-action: pan-y; }
+    html, body { margin: 0; padding: 0; background: #fff; overflow-y: auto; }
+    #bag-wrapper { display: flex; justify-content: center; align-items: center; width: 100vw; height: 100vh; }
+    canvas { width: 100vw; height: auto; touch-action: pan-y; cursor: grab; display: block; }
   </style>
 </head>
 <body>
   <div id="bag-wrapper"><canvas id="bagCanvas"></canvas></div>
   <script>
+    const frameCount = 37;
     const canvas = document.getElementById('bagCanvas');
     const ctx = canvas.getContext('2d');
-    const frameCount = 37;
-    const images = [];
+    let images = [];
     let currentFrame = 0;
-
-    // 상태 변수
     let pointerDown = false;
     let hasDragged = false;
     let startX = 0, startY = 0;
     let lastX = 0, lastTime = 0;
     let velocity = 0;
-    let inertiaId = null;
+    let inertiaId;
 
-    // 이미지 로드 및 초기화
+    // Preload images
     for (let i = 1; i <= frameCount; i++) {
       const img = new Image();
       img.src = `https://enj161203.diskn.com/product/tshirts_test/test/레이어 ${i}.JPG`;
@@ -41,7 +39,6 @@
       images.push(img);
     }
 
-    // 프레임 렌더 함수
     function drawFrame(frame) {
       const idx = ((frame % frameCount) + frameCount) % frameCount;
       const img = images[idx];
@@ -50,19 +47,17 @@
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     }
 
-    // 관성 애니메이션
     function startInertia() {
       cancelAnimationFrame(inertiaId);
-      (function inertiaLoop() {
+      (function loop() {
         velocity *= 0.95;
         if (Math.abs(velocity) < 0.01) return;
         currentFrame -= velocity * 3.5;
         drawFrame(Math.round(currentFrame));
-        inertiaId = requestAnimationFrame(inertiaLoop);
+        inertiaId = requestAnimationFrame(loop);
       })();
     }
 
-    // 포인터 다운
     canvas.addEventListener('pointerdown', e => {
       pointerDown = true;
       hasDragged = false;
@@ -71,15 +66,13 @@
       lastTime = performance.now();
       canvas.setPointerCapture(e.pointerId);
       canvas.style.cursor = 'grabbing';
-      // 관성은 드래그 시작 시에만 취소함
     });
 
-    // 포인터 무브: 수평 우위시 드래그로 인식하여 관성 취소
     canvas.addEventListener('pointermove', e => {
       if (!pointerDown) return;
       const dxTotal = e.clientX - startX;
       const dyTotal = e.clientY - startY;
-      // 수평 이동이 수직 이동보다 클 때 드래그
+      // Only cancel inertia if horizontal drag dominates
       if (!hasDragged && Math.abs(dxTotal) > Math.abs(dyTotal)) {
         hasDragged = true;
         cancelAnimationFrame(inertiaId);
@@ -96,24 +89,19 @@
       }
     }, { passive: true });
 
-    // 포인터 업: 항상 관성 재시작
-    function endInteraction(e) {
-      hasDragged = false; // 드래그 리셋
-      cancelAnimationFrame(inertiaId);
-      startInertia();
-      startInertia();
+    canvas.addEventListener('pointerup', e => {
+      if (hasDragged) startInertia();
       pointerDown = false;
       canvas.releasePointerCapture(e.pointerId);
       canvas.style.cursor = 'grab';
-    }
-    canvas.addEventListener('pointerup', endInteraction);
-    
-    
+    });
+    canvas.addEventListener('pointercancel', e => {
+      if (hasDragged) startInertia();
+      pointerDown = false;
+      canvas.releasePointerCapture(e.pointerId);
+      canvas.style.cursor = 'grab';
+    });
 
-        
-    }, { passive: true });
-
-    // 리사이즈
     window.addEventListener('resize', () => drawFrame(Math.round(currentFrame)));
   </script>
 </body>

@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>360도 가방 회전 (Canvas + JS Inertia)</title>
   <style>
     html, body { margin: 0; padding: 0; background: #fff; overflow-y: auto; font-family: sans-serif; touch-action: auto; }
@@ -28,17 +28,16 @@
     let inertiaId = null;
 
     // 이미지 로드 및 캔버스 초기화
-    images.length = 0;
     for (let i = 1; i <= frameCount; i++) {
       const img = new Image();
       img.src = `https://enj161203.diskn.com/product/tshirts_test/test/레이어 ${i}.JPG`;
-      if (i === 1) {
-        img.onload = () => {
+      img.onload = () => {
+        if (i === 1) {
           canvas.width = img.naturalWidth;
           canvas.height = img.naturalHeight;
           drawFrame(0);
-        };
-      }
+        }
+      };
       images.push(img);
     }
 
@@ -72,15 +71,14 @@
       lastTime = performance.now();
       canvas.setPointerCapture(e.pointerId);
       canvas.style.cursor = 'grabbing';
+      cancelAnimationFrame(inertiaId);
     });
 
-    // 포인터 무브: 수평 이동이 감지되면 드래그로 인식하여 관성만 취소
-    // 포인터 무브: 대각선 포함, 수평 우위일 때만 드래그 인식하여 관성 취소
+    // 포인터 이동: 수평 우위일때만 실제 드래그
     canvas.addEventListener('pointermove', e => {
       if (!pointerDown) return;
       const dxTotal = e.clientX - startX;
       const dyTotal = e.clientY - startY;
-      // 수평 이동이 수직 이동보다 클 때만 드래그로 간주
       if (!hasDragged && Math.abs(dxTotal) > Math.abs(dyTotal)) {
         hasDragged = true;
         cancelAnimationFrame(inertiaId);
@@ -97,21 +95,16 @@
       }
     }, { passive: true });
 
-    // 포인터 업
-    // 포인터 업: 항상 관성 재시작
-    canvas.addEventListener('pointerup', e => {
-      startInertia();
+    // 포인터 업: 관성 재시작
+    function endPointer(e) {
+      if (hasDragged) startInertia();
       pointerDown = false;
       canvas.releasePointerCapture(e.pointerId);
       canvas.style.cursor = 'grab';
-    });
-
-    // 포인터 캔슬
-    canvas.addEventListener('pointercancel', e => {
-      pointerDown = false;
-      canvas.releasePointerCapture(e.pointerId);
-      canvas.style.cursor = 'grab';
-    });
+    }
+    canvas.addEventListener('pointerup', endPointer);
+    canvas.addEventListener('pointercancel', endPointer);
+    canvas.addEventListener('lostpointercapture', endPointer);
 
     // 리사이즈 시 현재 프레임 유지
     window.addEventListener('resize', () => drawFrame(Math.round(currentFrame)));

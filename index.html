@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>360도 가방 회전 (Canvas + 순수 JS Inertia)</title>
+  <title>360도 가방 회전 (Canvas + 순수 JS Inertia + Scroll Rotation)</title>
   <style>
     html, body {
       margin: 0; padding: 0;
@@ -41,6 +41,7 @@
     let currentFrame = 0;
     let pointerDown = false;
     let lastX = 0, lastTime = 0, velocity = 0, inertiaId;
+    let lastScrollY = window.scrollY;
 
     // 이미지 로드 및 캔버스 설정
     for (let i = 1; i <= frameCount; i++) {
@@ -64,7 +65,7 @@
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     }
 
-    // 포인터 다운: 회전 시작 준비
+    // 포인터 다운: 회전 준비
     canvas.addEventListener('pointerdown', e => {
       pointerDown = true;
       lastX = e.clientX;
@@ -74,12 +75,12 @@
       canvas.style.cursor = 'grabbing';
     });
 
-    // 포인터 이동: 항상 가로 이동만큼 회전, 수직 스크롤도 유지
+    // 포인터 이동: 수평 드래그 회전 + 세로 스크롤은 브라우저 처리
     canvas.addEventListener('pointermove', e => {
       if (!pointerDown) return;
       const now = performance.now();
-      const dt = now - lastTime;
       const dx = e.clientX - lastX;
+      const dt = now - lastTime;
       velocity = dx / dt;
       currentFrame -= dx * 0.2;
       drawFrame(Math.round(currentFrame));
@@ -101,13 +102,25 @@
         inertiaId = requestAnimationFrame(inertia);
       })();
     });
-
     canvas.addEventListener('pointercancel', e => {
       if (!pointerDown) return;
       pointerDown = false;
       canvas.releasePointerCapture(e.pointerId);
       canvas.style.cursor = 'grab';
     });
+
+    // 스크롤 이벤트로도 회전
+    window.addEventListener('scroll', () => {
+      const scrollY = window.scrollY;
+      const dy = scrollY - lastScrollY;
+      // 스크롤 이동량에 비례해 회전 (조정 필요 시 곱셈 계수 변경)
+      currentFrame -= dy * 0.3;
+      drawFrame(Math.round(currentFrame));
+      lastScrollY = scrollY;
+    }, { passive: true });
+
+    // 리사이즈 시 현재 프레임 유지
+    window.addEventListener('resize', () => drawFrame(Math.round(currentFrame)));
   </script>
 </body>
 </html>

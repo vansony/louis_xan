@@ -3,105 +3,94 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>360도 가방 회전 (Canvas + JS Inertia)</title>
+  <title>360도 가방 회전 (Canvas + JS Inertia)
+  </title>
   <style>
-    html, body { margin: 0; padding: 0; background: #fff; overflow-y: auto; }
-    #bag-wrapper { display: flex; justify-content: center; align-items: center; width: 100vw; height: 100vh; }
-    canvas { width: 100vw; height: auto; touch-action: pan-y; cursor: grab; display: block; }
+    html, body { margin:0; padding:0; background:#fff; overflow-y:auto; touch-action: auto; }
+    #bag-wrapper { display:flex; justify-content:center; align-items:center; width:100vw; height:auto; }
+    canvas { width:100vw; height:auto; max-height:100vh; cursor:grab; touch-action: pan-y; display:block; }
   </style>
 </head>
 <body>
   <div id="bag-wrapper"><canvas id="bagCanvas"></canvas></div>
   <script>
     const frameCount = 37;
+    const images = [];
     const canvas = document.getElementById('bagCanvas');
     const ctx = canvas.getContext('2d');
-    let images = [];
     let currentFrame = 0;
-    let pointerDown = false;
-    let hasDragged = false;
-    let startX = 0, startY = 0;
-    let lastX = 0, lastTime = 0;
+    let isPointerDown = false;
+    let lastX = 0;
+    let lastTime = 0;
     let velocity = 0;
     let inertiaId;
 
-    // Preload images
-    for (let i = 1; i <= frameCount; i++) {
+    // 이미지 로드 및 캔버스 초기화
+    for (let i=1; i<=frameCount; i++) {
       const img = new Image();
       img.src = `https://enj161203.diskn.com/product/tshirts_test/test/레이어 ${i}.JPG`;
-      img.onload = () => {
-        if (i === 1) {
-          canvas.width = img.naturalWidth;
-          canvas.height = img.naturalHeight;
-          drawFrame(0);
-        }
+      if (i===1) img.onload = () => {
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        drawFrame(0);
       };
       images.push(img);
     }
 
     function drawFrame(frame) {
-      const idx = ((frame % frameCount) + frameCount) % frameCount;
+      const idx = ((frame % frameCount)+frameCount)%frameCount;
       const img = images[idx];
       if (!img.complete) return;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      ctx.drawImage(img,0,0,canvas.width,canvas.height);
     }
 
     function startInertia() {
       cancelAnimationFrame(inertiaId);
-      (function loop() {
+      (function inertiaLoop() {
         velocity *= 0.95;
         if (Math.abs(velocity) < 0.01) return;
         currentFrame -= velocity * 3.5;
         drawFrame(Math.round(currentFrame));
-        inertiaId = requestAnimationFrame(loop);
+        inertiaId = requestAnimationFrame(inertiaLoop);
       })();
     }
 
+    // Pointer down on canvas
     canvas.addEventListener('pointerdown', e => {
-      pointerDown = true;
-      hasDragged = false;
-      startX = lastX = e.clientX;
-      startY = e.clientY;
+      isPointerDown = true;
+      lastX = e.clientX;
       lastTime = performance.now();
+      cancelAnimationFrame(inertiaId);
       canvas.setPointerCapture(e.pointerId);
       canvas.style.cursor = 'grabbing';
     });
 
+    // Pointer move always rotates based on horizontal movement
     canvas.addEventListener('pointermove', e => {
-      if (!pointerDown) return;
-      const dxTotal = e.clientX - startX;
-      const dyTotal = e.clientY - startY;
-      // Only cancel inertia if horizontal drag dominates
-      if (!hasDragged && Math.abs(dxTotal) > Math.abs(dyTotal)) {
-        hasDragged = true;
-        cancelAnimationFrame(inertiaId);
-      }
-      if (hasDragged) {
-        const now = performance.now();
-        const dx = e.clientX - lastX;
-        const dt = now - lastTime;
-        velocity = dx / dt;
-        currentFrame -= dx * 0.2;
-        drawFrame(Math.round(currentFrame));
-        lastX = e.clientX;
-        lastTime = now;
-      }
+      if (!isPointerDown) return;
+      const now = performance.now();
+      const dx = e.clientX - lastX;
+      const dt = now - lastTime;
+      velocity = dx / dt;
+      currentFrame -= dx * 0.2;
+      drawFrame(Math.round(currentFrame));
+      lastX = e.clientX;
+      lastTime = now;
     }, { passive: true });
 
-    canvas.addEventListener('pointerup', e => {
-      if (hasDragged) startInertia();
-      pointerDown = false;
+    // Pointer up always restarts inertia
+    function onPointerUp(e) {
+      if (isPointerDown) startInertia();
+      isPointerDown = false;
       canvas.releasePointerCapture(e.pointerId);
       canvas.style.cursor = 'grab';
-    });
-    canvas.addEventListener('pointercancel', e => {
-      if (hasDragged) startInertia();
-      pointerDown = false;
-      canvas.releasePointerCapture(e.pointerId);
-      canvas.style.cursor = 'grab';
-    });
+    }
+    canvas.addEventListener('pointerup', onPointerUp);
+    canvas.addEventListener('pointercancel', onPointerUp);
+    canvas.addEventListener('lostpointercapture', onPointerUp);
 
+    // Resize
     window.addEventListener('resize', () => drawFrame(Math.round(currentFrame)));
   </script>
 </body>

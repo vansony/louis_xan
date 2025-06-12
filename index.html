@@ -28,6 +28,7 @@
     let inertiaId = null;
 
     // 이미지 로드 및 캔버스 초기화
+    images.length = 0;
     for (let i = 1; i <= frameCount; i++) {
       const img = new Image();
       img.src = `https://enj161203.diskn.com/product/tshirts_test/test/레이어 ${i}.JPG`;
@@ -41,7 +42,7 @@
       images.push(img);
     }
 
-    // 캔버스에 해당 프레임 이미지 그리기
+    // 프레임 그리기
     function drawFrame(frame) {
       const idx = ((frame % frameCount) + frameCount) % frameCount;
       const img = images[idx];
@@ -62,7 +63,7 @@
       })();
     }
 
-    // 포인터 다운 핸들러
+    // 포인터 다운
     canvas.addEventListener('pointerdown', e => {
       pointerDown = true;
       hasDragged = false;
@@ -71,22 +72,15 @@
       lastTime = performance.now();
       canvas.setPointerCapture(e.pointerId);
       canvas.style.cursor = 'grabbing';
-      // 관성은 드래그가 실제 시작될 때만 취소합니다 (여기선 취소하지 않음)
-    });
-      canvas.setPointerCapture(e.pointerId);
-      canvas.style.cursor = 'grabbing';
-      cancelAnimationFrame(inertiaId);
     });
 
-    // 포인터 무브 핸들러
+    // 포인터 무브: 대각선 스크롤 중에도 수평 성분이 있으면 드래그로 인식
     canvas.addEventListener('pointermove', e => {
       if (!pointerDown) return;
       const dxTotal = e.clientX - startX;
       const dyTotal = e.clientY - startY;
-      // 대각선 중 수직 성분이 크면 스크롤, 수평 성분이 크면 드래그
       if (!hasDragged && Math.abs(dxTotal) > Math.abs(dyTotal)) {
         hasDragged = true;
-        // 실제 드래그 시작 시 관성을 취소
         cancelAnimationFrame(inertiaId);
       }
       if (hasDragged) {
@@ -101,7 +95,7 @@
       }
     }, { passive: true });
 
-    // 포인터 업 핸들러
+    // 포인터 업
     canvas.addEventListener('pointerup', e => {
       if (hasDragged) startInertia();
       pointerDown = false;
@@ -109,7 +103,7 @@
       canvas.style.cursor = 'grab';
     });
 
-    // 포인터 캔슬 핸들러
+    // 포인터 캔슬
     canvas.addEventListener('pointercancel', e => {
       pointerDown = false;
       canvas.releasePointerCapture(e.pointerId);

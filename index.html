@@ -100,7 +100,7 @@
       pointer-events: auto;
     }
 
-    /* 세로 스크롤을 유도하는 투명한 핫존 */
+    /* 세로 스크롤 핫존 (터치는 허용하되, 드래그는 통과) */
     #bag-scroll-overlay {
       position: absolute;
       top: 0;
@@ -108,9 +108,8 @@
       width: 100%;
       height: 100%;
       z-index: 5;
-      touch-action: pan-y; /* 세로 스크롤만 허용 */
-      background-color: transparent;
-      pointer-events: auto;
+      touch-action: pan-y;
+      pointer-events: none; /* 여기서 핵심: 드래그 이벤트는 이미지로 전달됨 */
     }
   </style>
 </head>
@@ -149,7 +148,6 @@
       dragAxis: 'x'
     });
 
-    // 프레임 저장
     $(bag360).on("onFrame", function(_, data){
       currentFrame = data.frame;
     });
@@ -169,7 +167,6 @@
 
 </body>
 </html>
-
 
 
   <img src="https://enj161203.diskn.com/product/tshirts_test/tshirts_test02.jpg" />

@@ -12,7 +12,7 @@
       height: auto;
       overflow-y: auto;
       font-family: sans-serif;
-      touch-action: auto; /* 모든 기본 터치 동작 허용 */
+      touch-action: auto;
     }
     #bag-wrapper {
       display: flex;
@@ -23,11 +23,11 @@
     }
     canvas {
       display: block;
-      width: 100vw;       /* 화면 너비에 맞게 꽉 채우기 */
+      width: 100vw;
       height: auto;
       max-height: 100vh;
       cursor: grab;
-      touch-action: pan-y; /* 수직 스크롤 허용, 가로는 JS 제어 */
+      touch-action: pan-y;
     }
   </style>
 </head>
@@ -43,18 +43,19 @@
     const images = [];
     let currentFrame = 0;
     let isDragging = false;
+    let hasMoved = false;
+    let startX = 0, startY = 0;
     let lastX = 0;
     let velocity = 0;
     let lastTime = 0;
     let inertiaId = null;
 
-    // 이미지 프리로드 및 캔버스 크기 설정
+    // 이미지 프리로드 및 초기 캔버스 설정
     for (let i = 1; i <= frameCount; i++) {
       const img = new Image();
       img.src = `https://enj161203.diskn.com/product/tshirts_test/test/레이어 ${i}.JPG`;
       if (i === 1) {
         img.onload = () => {
-          // 첫 이미지 로드 후 내부 픽셀 크기 설정 (원본 비율 유지)
           canvas.width = img.naturalWidth;
           canvas.height = img.naturalHeight;
           drawFrame(0);
@@ -63,7 +64,6 @@
       images.push(img);
     }
 
-    // 특정 프레임 그리기
     function drawFrame(frame) {
       const idx = ((frame % frameCount) + frameCount) % frameCount;
       const img = images[idx];
@@ -72,57 +72,72 @@
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     }
 
-    // 드래그 시작
+    // 포인터 다운: 방향 판별 초기화, 관성은 지우지 않음
     canvas.addEventListener('pointerdown', e => {
-      isDragging = true;
-      canvas.setPointerCapture(e.pointerId);
-      lastX = e.clientX;
+      startX = lastX = e.clientX;
+      startY = e.clientY;
       lastTime = performance.now();
-      cancelAnimationFrame(inertiaId);
-      canvas.style.cursor = 'grabbing';
+      hasMoved = false;
     });
 
-    // 드래그 중
+    // 포인터 이동: 첫 움직임에서 방향 판별
     canvas.addEventListener('pointermove', e => {
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      if (!hasMoved) {
+        // 수평 이동이 더 크면 드래그 시작
+        if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 5) {
+          isDragging = true;
+          hasMoved = true;
+          canvas.setPointerCapture(e.pointerId);
+          cancelAnimationFrame(inertiaId);
+          canvas.style.cursor = 'grabbing';
+          lastX = e.clientX;
+          lastTime = performance.now();
+        } else if (Math.abs(dy) > Math.abs(dx)) {
+          // 수직 스크롤 진입 시 드래그 중지
+          isDragging = false;
+          return;
+        }
+      }
       if (!isDragging) return;
-      const dx = e.clientX - lastX;
+
       const now = performance.now();
       const dt = now - lastTime;
-      velocity = dx / dt;
-      currentFrame -= dx * 0.2;
+      const moveX = e.clientX - lastX;
+      velocity = moveX / dt;
+      currentFrame -= moveX * 0.2;
       drawFrame(Math.round(currentFrame));
       lastX = e.clientX;
       lastTime = now;
-    });
+    }, { passive: false });
 
-    // 드래그 끝 & 관성
+    // 포인터 업: 관성 재시작
     canvas.addEventListener('pointerup', e => {
-      isDragging = false;
-      canvas.releasePointerCapture(e.pointerId);
-      canvas.style.cursor = 'grab';
-      const decay = 0.95;
-      function inertia() {
-        velocity *= decay;
-        if (Math.abs(velocity) < 0.01) return;
-        currentFrame -= velocity * 3.5;
-        drawFrame(Math.round(currentFrame));
-        inertiaId = requestAnimationFrame(inertia);
+      if (isDragging) {
+        canvas.releasePointerCapture(e.pointerId);
+        canvas.style.cursor = 'grab';
+        isDragging = false;
+        const decay = 0.95;
+        (function inertia() {
+          velocity *= decay;
+          if (Math.abs(velocity) < 0.01) return;
+          currentFrame -= velocity * 3.5;
+          drawFrame(Math.round(currentFrame));
+          inertiaId = requestAnimationFrame(inertia);
+        })();
       }
-      inertia();
     });
 
-    // 포인터 캔슬 시 드래그 종료
     canvas.addEventListener('pointercancel', e => {
-      isDragging = false;
-      canvas.releasePointerCapture(e.pointerId);
-      canvas.style.cursor = 'grab';
+      if (isDragging) {
+        canvas.releasePointerCapture(e.pointerId);
+        canvas.style.cursor = 'grab';
+        isDragging = false;
+      }
     });
 
-    // 윈도우 리사이즈 시에도 화면에 꽉 맞게 유지
-    window.addEventListener('resize', () => {
-      // CSS width:100vw가 적용되므로 별도 처리 불필요
-      drawFrame(Math.round(currentFrame));
-    });
+    window.addEventListener('resize', () => drawFrame(Math.round(currentFrame)));
   </script>
 </body>
 </html>

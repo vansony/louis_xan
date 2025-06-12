@@ -25,7 +25,7 @@
       width: 100%;
       max-width: 600px;
       background-color: transparent;
-      touch-action: pan-y; /* 세로 스크롤 허용, 가로는 JS로 처리 */
+      touch-action: pan-y; /* 세로 스크롤 허용 */
     }
   </style>
 
@@ -55,6 +55,9 @@
     const bagRatio = 1326 / 800;
     let currentFrame = 0;
     let api;
+    let dragging = false;
+    let lastX = 0, lastY = 0, lastTime = 0;
+    let velocity = 0;
 
     function initSpritespin() {
       const width = bag360.clientWidth;
@@ -75,17 +78,12 @@
     window.addEventListener('load', initSpritespin);
     window.addEventListener('resize', () => setTimeout(initSpritespin, 100));
 
-    // 커스텀 드래그 + 관성 로직 (수평 드래그만 처리)
-    let dragging = false;
-    let lastX = 0, lastY = 0, lastTime = 0;
-    let velocity = 0;
-
     function onPointerDown(e) {
       dragging = true;
+      bag360.setPointerCapture(e.pointerId);
       lastX = e.clientX;
       lastY = e.clientY;
       lastTime = performance.now();
-      // 진행 중 tween 중지
       gsap.killTweensOf(window.inertiaObj || {});
     }
 
@@ -95,32 +93,31 @@
       const dx = e.clientX - lastX;
       const dy = e.clientY - lastY;
       const dt = now - lastTime;
-      // 수평 이동이 수직보다 큰 경우만 처리
       if (Math.abs(dx) > Math.abs(dy)) {
-        e.preventDefault();  // 가로 슬라이드 제어
-        // 프레임 업데이트
+        e.preventDefault();
         currentFrame = (currentFrame + dx * -0.2 + api.source.length) % api.source.length;
         api.updateFrame(Math.round(currentFrame));
-        // 속도 갱신(px/ms)
         velocity = dx / dt;
         lastX = e.clientX;
         lastY = e.clientY;
         lastTime = now;
       } else {
-        // 수직 스크롤로 전환
         dragging = false;
       }
     }
 
     function onPointerUp(e) {
-      if (!dragging) return;
+      if (!dragging) {
+        bag360.releasePointerCapture(e.pointerId);
+        return;
+      }
       dragging = false;
-      // 관성 애니메이션
+      bag360.releasePointerCapture(e.pointerId);
       const start = currentFrame;
       window.inertiaObj = { frame: start };
       console.log('Trigger inertia with velocity:', velocity);
       gsap.to(window.inertiaObj, {
-        inertia: { frame: velocity * 500 },  // 상수로 관성 강도 조절
+        inertia: { frame: velocity * 500 },
         onUpdate(obj) {
           currentFrame = ((obj.frame % api.source.length) + api.source.length) % api.source.length;
           api.updateFrame(Math.round(currentFrame));
@@ -129,11 +126,11 @@
       });
     }
 
-    // 이벤트 등록 (passive: false 로 제어 가능)
     bag360.addEventListener('pointerdown', onPointerDown);
     bag360.addEventListener('pointermove', onPointerMove, { passive: false });
     bag360.addEventListener('pointerup', onPointerUp);
     bag360.addEventListener('pointercancel', onPointerUp);
+    bag360.addEventListener('lostpointercapture', onPointerUp);
   </script>
 </body>
 </html>

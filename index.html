@@ -75,11 +75,13 @@
     });
 
     // 포인터 무브: 수평 이동이 감지되면 드래그로 인식하여 관성만 취소
+    // 포인터 무브: 대각선 포함, 수평 우위일 때만 드래그 인식하여 관성 취소
     canvas.addEventListener('pointermove', e => {
       if (!pointerDown) return;
       const dxTotal = e.clientX - startX;
-      // 수평 이동만으로 드래그 인식
-      if (!hasDragged && Math.abs(dxTotal) > 0) {
+      const dyTotal = e.clientY - startY;
+      // 수평 이동이 수직 이동보다 클 때만 드래그로 간주
+      if (!hasDragged && Math.abs(dxTotal) > Math.abs(dyTotal)) {
         hasDragged = true;
         cancelAnimationFrame(inertiaId);
       }

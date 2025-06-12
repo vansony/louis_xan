@@ -70,119 +70,65 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>360도 가방 회전 (Custom JS)</title>
+  <title>360도 가방 회전</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/spritespin@4.0.11/release/spritespin.js"></script>
   <style>
     html, body {
       margin: 0;
       padding: 0;
-      background: #fff;
+      background: #ffffff;
       height: 100%;
-      overflow-x: hidden;
     }
+
     #bag-wrapper {
       width: 100vw;
       min-height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
-      background: #fff;
+      background: #ffffff;
     }
+
     #bag360 {
-      width: auto;
-      height: auto;
+      width: 100vw;
+      aspect-ratio: 800 / 1138;
       max-height: 95vh;
-      max-width: 100vw;
-      aspect-ratio: 800 / 1326;
-      touch-action: pan-y;
-      -webkit-user-drag: none;
-      user-select: none;
-      overflow: hidden;
-    }
-    #bag360 img {
-      width: 100%;
-      height: auto;
-      object-fit: contain;
-      pointer-events: none;
+      background-color: transparent;
+      touch-action: pan-y;         /* 세로 스크롤 허용 */
+      will-change: transform;      /* 깜빡임 방지 */
     }
   </style>
 </head>
 <body>
+
 <div id="bag-wrapper">
-  <div id="bag360">
-    <img id="bagImage" src="" alt="360 가방">
-  </div>
+  <div id="bag360">로딩 중...</div>
 </div>
 
 <script>
-  const totalFrames = 37;
-  const frameTime = 125;
-  const baseUrl = 'https://enj161203.diskn.com/product/tshirts_test/test/';
-  const imageEl = document.getElementById('bagImage');
-  let currentFrame = 0;
-  let autoTimer = null;
-  let isDragging = false;
-  let startX = 0;
-  let lastX = 0;
-  let accumulatedDelta = 0;
-  const sensitivity = 0.15;
-
-  function getImageSrc(index) {
-    return `${baseUrl}레이어 ${index + 1}.JPG`;
+  const imageUrls = [];
+  for (let i = 1; i <= 37; i++) {
+    imageUrls.push(`https://enj161203.diskn.com/product/tshirts_test/test/레이어 ${i}.JPG`);
   }
 
-  function updateFrame(index) {
-    currentFrame = (index + totalFrames) % totalFrames;
-    imageEl.src = getImageSrc(currentFrame);
-  }
+  const containerWidth = document.getElementById('bag360').clientWidth;
+  const bagRatio = 1138 / 800;
+  const containerHeight = containerWidth * bagRatio;
 
-  function startAutoRotate() {
-    stopAutoRotate();
-    autoTimer = setInterval(() => {
-      updateFrame(currentFrame + 1);
-    }, frameTime);
-  }
-
-  function stopAutoRotate() {
-    if (autoTimer) clearInterval(autoTimer);
-    autoTimer = null;
-  }
-
-  function initDrag(el) {
-    el.addEventListener('touchstart', (e) => {
-      isDragging = true;
-      stopAutoRotate();
-      startX = e.touches[0].clientX;
-      lastX = startX;
-      accumulatedDelta = 0;
-    });
-
-    el.addEventListener('touchmove', (e) => {
-      if (!isDragging) return;
-      const currentX = e.touches[0].clientX;
-      const dx = currentX - lastX;
-      accumulatedDelta += dx;
-      const frameChange = Math.floor(accumulatedDelta * sensitivity);
-      if (frameChange !== 0) {
-        updateFrame(currentFrame - frameChange);
-        accumulatedDelta -= frameChange / sensitivity;
-      }
-      lastX = currentX;
-    });
-
-    el.addEventListener('touchend', () => {
-      isDragging = false;
-      accumulatedDelta = 0;
-      setTimeout(() => {
-        if (!isDragging) startAutoRotate();
-      }, 300);
-    });
-  }
-
-  updateFrame(0);
-  startAutoRotate();
-  initDrag(document.getElementById('bag360'));
+  $('#bag360').spritespin({
+    source: imageUrls,
+    width: containerWidth,
+    height: containerHeight,
+    responsive: false,         // 깜빡임 방지
+    animate: false,
+    sense: -1,
+    plugins: ['360', 'drag'],
+    dragAxis: 'x'              // 좌우만 회전, 상하 스크롤 허용
+  });
 </script>
+
 </body>
 </html>
 

@@ -116,8 +116,11 @@
   const bag360 = document.getElementById('bag360');
   const bagRatio = 1326 / 800;
   let currentFrame = 0;
-
   let spinApi = null;
+
+  let lastTouchX = 0;
+  let lastMoveTime = 0;
+  let lastSpeed = 0;
   let inertiaVelocity = 0;
   let inertiaInterval = null;
 
@@ -135,7 +138,7 @@
       animate: false,
       frame: currentFrame,
       sense: -1,
-      plugins: ['360'],
+      plugins: ['360', 'drag'], // drag 플러그인 복원!
       dragAxis: 'x'
     });
 
@@ -156,11 +159,7 @@
     setTimeout(updateBagHeightOnly, 100);
   });
 
-  // ✅ 관성 회전 구현
-  let lastTouchX = 0;
-  let lastMoveTime = 0;
-  let lastSpeed = 0;
-
+  // 🔁 관성 회전 구현
   bag360.addEventListener('touchstart', (e) => {
     if (inertiaInterval) clearInterval(inertiaInterval);
     lastTouchX = e.touches[0].clientX;
@@ -176,20 +175,13 @@
       lastSpeed = dx / dt;
       lastTouchX = e.touches[0].clientX;
       lastMoveTime = Date.now();
-
-      // 회전
-      if (spinApi) {
-        const dir = dx > 0 ? -1 : 1;
-        spinApi.frame = (spinApi.frame + dir + spinApi.frames) % spinApi.frames;
-        spinApi.updateFrame();
-      }
     }
 
-    e.preventDefault(); // 스크롤 막고 회전
-  }, { passive: false });
+    // drag 플러그인이 동작하도록 touchmove에서는 preventDefault 하지 않음
+  }, { passive: true });
 
   bag360.addEventListener('touchend', () => {
-    inertiaVelocity = lastSpeed * 100; // 보정값
+    inertiaVelocity = lastSpeed * 100; // 관성 속도 설정
     if (Math.abs(inertiaVelocity) < 1) return;
 
     inertiaInterval = setInterval(() => {
@@ -198,18 +190,17 @@
       spinApi.frame = (spinApi.frame + Math.sign(inertiaVelocity) + spinApi.frames) % spinApi.frames;
       spinApi.updateFrame();
 
-      inertiaVelocity *= 0.94; // 감속 계수
+      inertiaVelocity *= 0.93; // 감속
       if (Math.abs(inertiaVelocity) < 0.5) {
         clearInterval(inertiaInterval);
         inertiaInterval = null;
       }
-    }, 16); // 약 60fps
+    }, 16);
   });
 </script>
 
 </body>
 </html>
-
 
   <img src="https://enj161203.diskn.com/product/tshirts_test/tshirts_test02.jpg" />
   <img src="https://enj161203.diskn.com/product/tshirts_test/tshirts_test03.jpg" />

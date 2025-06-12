@@ -70,7 +70,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>360도 가방 회전</title>
+  <title>360도 가방 회전 (관성 포함)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/spritespin@4.0.11/release/spritespin.js"></script>
@@ -97,7 +97,7 @@
       width: 100%;
       max-width: 600px;
       background-color: transparent;
-      touch-action: none; /* 커스텀으로 처리 */
+      touch-action: none;
     }
   </style>
 </head>
@@ -117,6 +117,10 @@
   const bagRatio = 1326 / 800;
   let currentFrame = 0;
 
+  let spinApi = null;
+  let inertiaVelocity = 0;
+  let inertiaInterval = null;
+
   function setBagSize() {
     const width = bag360.clientWidth;
     const height = width * bagRatio;
@@ -131,13 +135,14 @@
       animate: false,
       frame: currentFrame,
       sense: -1,
-      plugins: ['360', 'drag'],
+      plugins: ['360'],
       dragAxis: 'x'
     });
 
-    $(bag360).on("onFrame", function(_, data){
+    spinApi = $(bag360).spritespin("api");
+    spinApi.onFrame = (e, data) => {
       currentFrame = data.frame;
-    });
+    };
   }
 
   function updateBagHeightOnly() {
@@ -151,32 +156,60 @@
     setTimeout(updateBagHeightOnly, 100);
   });
 
-  // ⭐️ 핵심: 터치 방향 감지해서 드래그/스크롤 분리
-  let startX = 0, startY = 0;
-  let isDraggingHorizontally = false;
+  // ✅ 관성 회전 구현
+  let lastTouchX = 0;
+  let lastMoveTime = 0;
+  let lastSpeed = 0;
 
-  bag360.addEventListener('touchstart', e => {
-    startX = e.touches[0].clientX;
-    startY = e.touches[0].clientY;
-    isDraggingHorizontally = false;
+  bag360.addEventListener('touchstart', (e) => {
+    if (inertiaInterval) clearInterval(inertiaInterval);
+    lastTouchX = e.touches[0].clientX;
+    lastMoveTime = Date.now();
+    lastSpeed = 0;
   });
 
-  bag360.addEventListener('touchmove', e => {
-    const dx = Math.abs(e.touches[0].clientX - startX);
-    const dy = Math.abs(e.touches[0].clientY - startY);
+  bag360.addEventListener('touchmove', (e) => {
+    const dx = e.touches[0].clientX - lastTouchX;
+    const dt = Date.now() - lastMoveTime;
 
-    if (dx > dy && dx > 5) {
-      isDraggingHorizontally = true;
-      e.preventDefault(); // 👉 회전
-    } else if (dy > dx && dy > 5) {
-      isDraggingHorizontally = false;
-      // 👉 스크롤 허용 (preventDefault 하지 않음)
+    if (Math.abs(dx) > 2 && dt > 10) {
+      lastSpeed = dx / dt;
+      lastTouchX = e.touches[0].clientX;
+      lastMoveTime = Date.now();
+
+      // 회전
+      if (spinApi) {
+        const dir = dx > 0 ? -1 : 1;
+        spinApi.frame = (spinApi.frame + dir + spinApi.frames) % spinApi.frames;
+        spinApi.updateFrame();
+      }
     }
+
+    e.preventDefault(); // 스크롤 막고 회전
   }, { passive: false });
+
+  bag360.addEventListener('touchend', () => {
+    inertiaVelocity = lastSpeed * 100; // 보정값
+    if (Math.abs(inertiaVelocity) < 1) return;
+
+    inertiaInterval = setInterval(() => {
+      if (!spinApi) return;
+
+      spinApi.frame = (spinApi.frame + Math.sign(inertiaVelocity) + spinApi.frames) % spinApi.frames;
+      spinApi.updateFrame();
+
+      inertiaVelocity *= 0.94; // 감속 계수
+      if (Math.abs(inertiaVelocity) < 0.5) {
+        clearInterval(inertiaInterval);
+        inertiaInterval = null;
+      }
+    }, 16); // 약 60fps
+  });
 </script>
 
 </body>
 </html>
+
 
   <img src="https://enj161203.diskn.com/product/tshirts_test/tshirts_test02.jpg" />
   <img src="https://enj161203.diskn.com/product/tshirts_test/tshirts_test03.jpg" />

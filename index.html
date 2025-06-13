@@ -6,7 +6,22 @@
   <title>Swipe360</title>
   <style>
     html, body { margin:0; padding:0; background:#fff; overflow-y:auto; }
-    #bag-wrapper { display:flex; justify-content:center; align-items:center; width:100vw; height:auto; }
+
+    body > img {
+      display: block;
+      max-width: 100vw;
+      height: auto;
+      margin: 20px auto;
+    }
+
+    #bag-wrapper {
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      width:100vw;
+      height:auto;
+    }
+
     canvas {
       display: block;
       max-width: 100vw;
@@ -20,7 +35,10 @@
 </head>
 <body>
   <img src="https://enj161203.diskn.com/product/tshirts_test/test/레이어-0.jpg" />
-  <div id="bag-wrapper"><canvas id="bagCanvas"></canvas></div>
+  <div id="bag-wrapper">
+    <canvas id="bagCanvas"></canvas>
+  </div>
+
   <script>
     const frameCount = 37;
     const images = [];
@@ -124,5 +142,5 @@
     // 리사이즈 대응
     window.addEventListener('resize', () => drawFrame(currentFrame));
   </script>
-  </body>
+</body>
 </html>

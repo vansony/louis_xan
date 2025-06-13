@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Swipe360</title>
+  <title>360도 가방 회전 (Canvas + JS Inertia)</title>
   <style>
     html, body { margin:0; padding:0; background:#fff; overflow-y:auto; }
     #bag-wrapper { display:flex; justify-content:center; align-items:center; width:100vw; height:auto; }
@@ -24,6 +24,8 @@
     let lastTime = 0;
     let velocity = 0;
     let inertiaId = null;
+
+    // 이미지 프리로드 및 캔버스 초기화
     for (let i = 1; i <= frameCount; i++) {
       const img = new Image();
       img.src = `https://enj161203.diskn.com/product/tshirts_test/test/레이어 ${i}.JPG`;
@@ -36,6 +38,8 @@
       };
       images.push(img);
     }
+
+    // 특정 프레임 그리기
     function drawFrame(frame) {
       const idx = ((frame % frameCount) + frameCount) % frameCount;
       const img = images[idx];
@@ -43,6 +47,8 @@
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     }
+
+    // 관성 애니메이션
     function startInertia() {
       cancelAnimationFrame(inertiaId);
       (function inertiaLoop() {
@@ -53,6 +59,8 @@
         inertiaId = requestAnimationFrame(inertiaLoop);
       })();
     }
+
+    // Pointer down
     canvas.addEventListener('pointerdown', e => {
       isPointerDown = true;
       pointerId = e.pointerId;
@@ -62,6 +70,8 @@
       canvas.setPointerCapture(pointerId);
       canvas.style.cursor = 'grabbing';
     });
+
+    // Pointer move
     canvas.addEventListener('pointermove', e => {
       if (!isPointerDown) return;
       const now = performance.now();
@@ -73,6 +83,8 @@
       lastX = e.clientX;
       lastTime = now;
     }, { passive: true });
+
+    // Pointer up / cancel / lostcapture
     function endInteraction(e) {
       if (isPointerDown) startInertia();
       isPointerDown = false;
@@ -85,6 +97,8 @@
     canvas.addEventListener('pointerup', endInteraction);
     canvas.addEventListener('pointercancel', endInteraction);
     canvas.addEventListener('lostpointercapture', endInteraction);
+
+    // Wheel / scroll: release pointer capture to avoid freeze
     window.addEventListener('wheel', () => {
       if (pointerId !== null) {
         canvas.releasePointerCapture(pointerId);
@@ -92,6 +106,8 @@
       }
       isPointerDown = false;
     }, { passive: true });
+
+    // Resize
     window.addEventListener('resize', () => drawFrame(Math.round(currentFrame)));
   </script>
 </body>

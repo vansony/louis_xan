@@ -33,7 +33,7 @@
     let velocity = 0;
     let inertiaId = null;
 
-    // 이미지 로드 및 초기 프레임 설정
+  
     for (let i = 1; i <= frameCount; i++) {
       const img = new Image();
       img.src = `https://enj161203.diskn.com/product/tshirts_test/test/레이어 ${i}.JPG`;
@@ -47,7 +47,6 @@
       images.push(img);
     }
 
-    // 방어 코드가 포함된 프레임 그리기
     function drawFrame(frame) {
       if (!Number.isFinite(frame)) return;
       const idx = ((Math.round(frame) % frameCount) + frameCount) % frameCount;
@@ -58,7 +57,6 @@
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     }
 
-    // 관성 애니메이션 시작
     function startInertia() {
       cancelAnimationFrame(inertiaId);
       (function inertiaLoop() {
@@ -71,7 +69,6 @@
       })();
     }
 
-    // 포인터 다운
     canvas.addEventListener('pointerdown', e => {
       isPointerDown = true;
       pointerId = e.pointerId;
@@ -82,7 +79,6 @@
       canvas.style.cursor = 'grabbing';
     });
 
-    // 포인터 이동
     canvas.addEventListener('pointermove', e => {
       if (!isPointerDown) return;
       const now = performance.now();
@@ -97,7 +93,6 @@
       }
     }, { passive: true });
 
-    // 포인터 업/취소
     function endInteraction(e) {
       if (isPointerDown) startInertia();
       isPointerDown = false;
@@ -111,7 +106,6 @@
     canvas.addEventListener('pointercancel', endInteraction);
     canvas.addEventListener('lostpointercapture', endInteraction);
 
-    // 휠 이벤트로 스크롤 허용
     window.addEventListener('wheel', () => {
       if (pointerId !== null) {
         canvas.releasePointerCapture(pointerId);
@@ -120,7 +114,6 @@
       isPointerDown = false;
     }, { passive: true });
 
-    // 리사이즈 대응
     window.addEventListener('resize', () => drawFrame(currentFrame));
   </script>
 </body>

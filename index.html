@@ -1,114 +1,92 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>360도 가방 회전 (Canvas + JS Inertia)</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>360도 가방 회전 (캔버스 + 관성)</title>
   <style>
-    html, body { margin:0; padding:0; background:#fff; overflow-y:auto; }
-    #bag-wrapper { display:flex; justify-content:center; align-items:center; width:100vw; height:auto; }
-    canvas { width:100vw; height:auto; max-height:100vh; cursor:grab; touch-action: pan-y; display:block; }
+    html, body { margin: 0; padding: 0; background: #fff; }
+    #bag-wrapper { display: flex; justify-content: center; align-items: center; width: 100vw; height: 100vh; }
+    canvas { width: 100vw; height: auto; max-height: 100vh; touch-action: pan-y; cursor: grab; }
   </style>
 </head>
 <body>
-  <div id="bag-wrapper"><canvas id="bagCanvas"></canvas></div>
+  <div id="bag-wrapper">
+    <canvas id="bagCanvas"></canvas>
+  </div>
   <script>
-    const frameCount = 37;
-    const images = [];
-    const canvas = document.getElementById('bagCanvas');
-    const ctx = canvas.getContext('2d');
-    let currentFrame = 0;
-    let isPointerDown = false;
-    let pointerId = null;
-    let lastX = 0;
-    let lastTime = 0;
-    let velocity = 0;
-    let inertiaId = null;
+    const frameCount = 37,
+          canvas = document.getElementById('bagCanvas'),
+          ctx = canvas.getContext('2d');
+    let currentFrame = 0,
+        isDown = false,
+        lastX = 0,
+        lastTime = 0,
+        velocity = 0,
+        animId;
 
-    // 이미지 프리로드 및 캔버스 초기화
-    for (let i = 1; i <= frameCount; i++) {
-      const img = new Image();
+    // Preload and init
+    for (let i = 1, img; i <= frameCount; i++) {
+      img = new Image();
       img.src = `https://enj161203.diskn.com/product/tshirts_test/test/레이어 ${i}.JPG`;
-      img.onload = () => {
-        if (i === 1) {
-          canvas.width = img.naturalWidth;
-          canvas.height = img.naturalHeight;
-          drawFrame(0);
-        }
+      if (i === 1) img.onload = () => {
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        render(0);
       };
       images.push(img);
     }
 
-    // 특정 프레임 그리기
-    function drawFrame(frame) {
+    function render(frame) {
       const idx = ((frame % frameCount) + frameCount) % frameCount;
       const img = images[idx];
       if (!img.complete) return;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.clearRect(0,0,canvas.width,canvas.height);
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     }
 
-    // 관성 애니메이션
     function startInertia() {
-      cancelAnimationFrame(inertiaId);
-      (function inertiaLoop() {
+      cancelAnimationFrame(animId);
+      (function loop() {
         velocity *= 0.95;
         if (Math.abs(velocity) < 0.01) return;
         currentFrame -= velocity * 3.5;
-        drawFrame(Math.round(currentFrame));
-        inertiaId = requestAnimationFrame(inertiaLoop);
+        render(currentFrame);
+        animId = requestAnimationFrame(loop);
       })();
     }
 
-    // Pointer down
     canvas.addEventListener('pointerdown', e => {
-      isPointerDown = true;
-      pointerId = e.pointerId;
+      isDown = true;
       lastX = e.clientX;
       lastTime = performance.now();
-      cancelAnimationFrame(inertiaId);
-      canvas.setPointerCapture(pointerId);
+      cancelAnimationFrame(animId);
+      canvas.setPointerCapture(e.pointerId);
       canvas.style.cursor = 'grabbing';
     });
 
-    // Pointer move
     canvas.addEventListener('pointermove', e => {
-      if (!isPointerDown) return;
-      const now = performance.now();
-      const dx = e.clientX - lastX;
-      const dt = now - lastTime;
+      if (!isDown) return;
+      const now = performance.now(),
+            dx = e.clientX - lastX,
+            dt = now - lastTime;
       velocity = dx / dt;
       currentFrame -= dx * 0.2;
-      drawFrame(Math.round(currentFrame));
+      render(currentFrame);
       lastX = e.clientX;
       lastTime = now;
     }, { passive: true });
 
-    // Pointer up / cancel / lostcapture
-    function endInteraction(e) {
-      if (isPointerDown) startInertia();
-      isPointerDown = false;
-      if (pointerId !== null) {
-        canvas.releasePointerCapture(pointerId);
-        pointerId = null;
-      }
-      canvas.style.cursor = 'grab';
-    }
-    canvas.addEventListener('pointerup', endInteraction);
-    canvas.addEventListener('pointercancel', endInteraction);
-    canvas.addEventListener('lostpointercapture', endInteraction);
+    ['up','cancel','lostpointercapture'].forEach(evt =>
+      canvas.addEventListener(`pointer${evt}`, e => {
+        if (isDown) startInertia();
+        isDown = false;
+        canvas.releasePointerCapture(e.pointerId);
+        canvas.style.cursor = 'grab';
+      })
+    );
 
-    // Wheel / scroll: release pointer capture to avoid freeze
-    window.addEventListener('wheel', () => {
-      if (pointerId !== null) {
-        canvas.releasePointerCapture(pointerId);
-        pointerId = null;
-      }
-      isPointerDown = false;
-    }, { passive: true });
-
-    // Resize
-    window.addEventListener('resize', () => drawFrame(Math.round(currentFrame)));
+    window.addEventListener('resize', () => render(currentFrame));
   </script>
 </body>
 </html>
